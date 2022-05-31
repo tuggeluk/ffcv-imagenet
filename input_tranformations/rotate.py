@@ -32,7 +32,7 @@ class RandomRotate(Operation):
                 pivot_point_x = np.floor(h/2)
                 pivot_point_y = np.floor(w/2)
 
-                new_img = np.zeros(images[i].shape, dtype='u1')
+                new_img = np.zeros(images[i].shape)
 
                 for height in range(h):  # h = number of row
                     for width in range(w):  # w = number of col
@@ -43,8 +43,8 @@ class RandomRotate(Operation):
                         new_x = pivot_point_x + rotate_mat[0].astype(np.int32)
                         new_y = pivot_point_y + rotate_mat[1].astype(np.int32)
 
-                        if (0 <= new_x <= w - 1) and (0 <= new_y <= h - 1):
-                            new_img[new_y, new_x] = images[i, height, width]
+                        # if (0 <= new_x <= w - 1) and (0 <= new_y <= h - 1):
+                        #     new_img[new_y, new_x] = images[i, height, width]
                 dst[i] = new_img
 
             return dst
