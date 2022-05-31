@@ -27,7 +27,7 @@ class MaskCorners(Operation):
                 mask = (np.sqrt((xx * xx) + (yy * yy)) - images[i].shape[0] / 2) > 0
 
                 dst[i] = images[i]
-                dst[i][mask] = 0
+                dst[i, mask] = 0
             return dst
 
         mask_corner.is_parallel = True
