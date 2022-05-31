@@ -22,7 +22,8 @@ class MaskCorners(Operation):
             for i in parallel_range(images.shape[0]):
                 x = np.arange(0, images[i].shape[0], 1) - np.floor(images[i].shape[0] / 2)
                 y = np.arange(0, images[i].shape[1], 1) - np.floor(images[i].shape[1] / 2)
-                xx, yy = np.meshgrid(x, y)
+                xx = np.repeat(x,len(y)).reshape((len(y), len(x))).transpose()
+                yy = np.repeat(y,len(x)).reshape((len(y), len(x)))
                 mask = (np.sqrt((xx * xx) + (yy * yy)) - images[i].shape[0] / 2) > 0
                 images[i][mask] = 0
                 dst[i] = images[i]
