@@ -40,8 +40,8 @@ class RandomRotate(Operation):
 
                         rotate_mat = np.dot(rotation_mat, xy_mat)
 
-                        new_x = pivot_point_x + int(rotate_mat[0])
-                        new_y = pivot_point_y + int(rotate_mat[1])
+                        new_x = pivot_point_x + rotate_mat[0].astype(np.int32)
+                        new_y = pivot_point_y + rotate_mat[1].astype(np.int32)
 
                         if (0 <= new_x <= w - 1) and (0 <= new_y <= h - 1):
                             new_img[new_y, new_x] = images[i][height, width]
