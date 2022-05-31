@@ -25,8 +25,9 @@ class MaskCorners(Operation):
                 xx = np.repeat(x,len(y)).reshape((len(y), len(x))).transpose()
                 yy = np.repeat(y,len(x)).reshape((len(y), len(x)))
                 mask = (np.sqrt((xx * xx) + (yy * yy)) - images[i].shape[0] / 2) > 0
-                images[i][mask] = 0
+
                 dst[i] = images[i]
+                dst[i][mask] = 0
             return dst
 
         mask_corner.is_parallel = True
