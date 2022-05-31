@@ -16,12 +16,37 @@ from dataclasses import replace
 from scipy import ndimage
 
 class RandomRotate(Operation):
+
+
     def generate_code(self):
+
         parallel_range = Compiler.get_iterator()
         def rotate(images, dst):
             angle = np.random.randint(0, 306, size=images.shape[0])
             for i in parallel_range(images.shape[0]):
-                    dst[i] = ndimage.rotate(images[i], angle[i], reshape=False)
+                #dst[i] = ndimage.rotate(images[i], angle[i], reshape=False)
+                rotation_mat = np.transpose(np.array([[np.cos(angle[i]), -np.sin(angle[i])],
+                                                      [np.sin(angle[i]), np.cos(angle[i])]]))
+                h, w = images[i].shape
+
+                pivot_point_x = np.floor(h/2)
+                pivot_point_y = np.floor(w/2)
+
+                new_img = np.zeros(images[i].shape, dtype='u1')
+
+                for height in range(h):  # h = number of row
+                    for width in range(w):  # w = number of col
+                        xy_mat = np.array([[width - pivot_point_x], [height - pivot_point_y]])
+
+                        rotate_mat = np.dot(rotation_mat, xy_mat)
+
+                        new_x = pivot_point_x + int(rotate_mat[0])
+                        new_y = pivot_point_y + int(rotate_mat[1])
+
+                        if (0 <= new_x <= w - 1) and (0 <= new_y <= h - 1):
+                            new_img[new_y, new_x] = images[i][height, width]
+                dst[i] = new_img
+
             return dst
 
         rotate.is_parallel = True
