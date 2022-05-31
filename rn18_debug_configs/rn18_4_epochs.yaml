@@ -28,6 +28,10 @@ training:
   optimizer: sgd
   weight_decay: 5e-5
   use_blurpool: 1
+  corner_mask: 1
+  random_rotate: 1
 validation:
   lr_tta: true
   resolution: 256
+  corner_mask: 1
+  random_rotate: 1
