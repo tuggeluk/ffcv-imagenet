@@ -239,10 +239,10 @@ class ImageNetTrainer:
         ]
 
         if random_rotate:
-            image_pipeline.insert(0, RandomRotate())
+            image_pipeline.insert(1, RandomRotate())
 
         if corner_mask:
-            image_pipeline.insert(0, MaskCorners())
+            image_pipeline.insert(1, MaskCorners())
 
         label_pipeline: List[Operation] = [
             IntDecoder(),
@@ -289,10 +289,10 @@ class ImageNetTrainer:
         ]
 
         if random_rotate:
-            image_pipeline.insert(0, RandomRotate())
+            image_pipeline.insert(1, RandomRotate())
 
         if corner_mask:
-            image_pipeline.insert(0, MaskCorners())
+            image_pipeline.insert(1, MaskCorners())
 
         label_pipeline = [
             IntDecoder(),
