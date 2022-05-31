@@ -44,7 +44,7 @@ class RandomRotate(Operation):
                         new_y = pivot_point_y + rotate_mat[1].astype(np.int32)
 
                         if (0 <= new_x <= w - 1) and (0 <= new_y <= h - 1):
-                            new_img[new_y, new_x] = images[i][height, width]
+                            new_img[new_y, new_x] = images[i, height, width]
                 dst[i] = new_img
 
             return dst
