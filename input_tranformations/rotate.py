@@ -27,7 +27,7 @@ class RandomRotate(Operation):
                 #dst[i] = ndimage.rotate(images[i], angle[i], reshape=False)
                 rotation_mat = np.transpose(np.array([[np.cos(angle[i]), -np.sin(angle[i])],
                                                       [np.sin(angle[i]), np.cos(angle[i])]]))
-                h, w = images[i].shape
+                h, w, _ = images[i].shape
 
                 pivot_point_x = np.floor(h/2)
                 pivot_point_y = np.floor(w/2)
