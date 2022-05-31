@@ -19,19 +19,15 @@ resolution:
   min_res: 160
   start_ramp: 11
 training:
-  batch_size: 1024
+  batch_size: 256
   bn_wd: 0
   distributed: 0
-  epochs: 16
+  epochs: 4
   label_smoothing: 0.1
   momentum: 0.9
   optimizer: sgd
   weight_decay: 5e-5
   use_blurpool: 1
-  corner_mask: 1
-  random_rotate: 1
 validation:
   lr_tta: true
   resolution: 256
-  corner_mask: 1
-  random_rotate: 1

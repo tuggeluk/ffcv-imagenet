@@ -32,6 +32,9 @@ from ffcv.transforms import ToTensor, ToDevice, Squeeze, NormalizeImage, \
 from ffcv.fields.rgb_image import CenterCropRGBImageDecoder, \
     RandomResizedCropRGBImageDecoder
 from ffcv.fields.basics import IntDecoder
+from input_tranformations.mask_corners import MaskCorners
+from input_tranformations.rotate import RandomRotate
+
 
 Section('model', 'model details').params(
     arch=Param(And(str, OneOf(models.__dir__())), default='resnet18'),
@@ -68,7 +71,9 @@ Section('logging', 'how to log stuff').params(
 Section('validation', 'Validation parameters stuff').params(
     batch_size=Param(int, 'The batch size for validation', default=512),
     resolution=Param(int, 'final resized validation image size', default=224),
-    lr_tta=Param(int, 'should do lr flipping/avging at test time', default=1)
+    lr_tta=Param(int, 'should do lr flipping/avging at test time', default=1),
+    corner_mask=Param(int, 'should mask corners at test time', default=0),
+    random_rotate=Param(int, 'should random rotate at test time', default=0)
 )
 
 Section('training', 'training hyper param stuff').params(
@@ -80,7 +85,9 @@ Section('training', 'training hyper param stuff').params(
     epochs=Param(int, 'number of epochs', default=30),
     label_smoothing=Param(float, 'label smoothing parameter', default=0.1),
     distributed=Param(int, 'is distributed?', default=0),
-    use_blurpool=Param(int, 'use blurpool?', default=0)
+    use_blurpool=Param(int, 'use blurpool?', default=0),
+    corner_mask=Param(int, 'should mask corners at train time', default=0),
+    random_rotate=Param(int, 'should random rotate at train time', default=0)
 )
 
 Section('dist', 'distributed training options').params(
@@ -212,8 +219,10 @@ class ImageNetTrainer:
     @param('training.batch_size')
     @param('training.distributed')
     @param('data.in_memory')
+    @param('training.corner_mask')
+    @param('training.random_rotate')
     def create_train_loader(self, train_dataset, num_workers, batch_size,
-                            distributed, in_memory):
+                            distributed, in_memory, corner_mask, random_rotate):
         this_device = f'cuda:{self.gpu}'
         train_path = Path(train_dataset)
         assert train_path.is_file()
@@ -228,6 +237,12 @@ class ImageNetTrainer:
             ToTorchImage(),
             NormalizeImage(IMAGENET_MEAN, IMAGENET_STD, np.float16)
         ]
+
+        if random_rotate:
+            image_pipeline.insert(0, RandomRotate())
+
+        if corner_mask:
+            image_pipeline.insert(0, MaskCorners())
 
         label_pipeline: List[Operation] = [
             IntDecoder(),
@@ -256,8 +271,10 @@ class ImageNetTrainer:
     @param('validation.batch_size')
     @param('validation.resolution')
     @param('training.distributed')
+    @param('validation.corner_mask')
+    @param('validation.random_rotate')
     def create_val_loader(self, val_dataset, num_workers, batch_size,
-                          resolution, distributed):
+                          resolution, distributed, corner_mask, random_rotate):
         this_device = f'cuda:{self.gpu}'
         val_path = Path(val_dataset)
         assert val_path.is_file()
@@ -270,6 +287,12 @@ class ImageNetTrainer:
             ToTorchImage(),
             NormalizeImage(IMAGENET_MEAN, IMAGENET_STD, np.float16)
         ]
+
+        if random_rotate:
+            image_pipeline.insert(0, RandomRotate())
+
+        if corner_mask:
+            image_pipeline.insert(0, MaskCorners())
 
         label_pipeline = [
             IntDecoder(),
