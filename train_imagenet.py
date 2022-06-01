@@ -6,8 +6,9 @@ import torch.distributed as dist
 ch.backends.cudnn.benchmark = True
 ch.autograd.profiler.emit_nvtx(False)
 ch.autograd.profiler.profile(False)
-
+#
 from torchvision import models
+
 import torchmetrics
 import numpy as np
 from tqdm import tqdm
@@ -34,6 +35,7 @@ from ffcv.fields.rgb_image import CenterCropRGBImageDecoder, \
 from ffcv.fields.basics import IntDecoder
 from input_tranformations.mask_corners import MaskCorners
 from input_tranformations.rotate import RandomRotate
+from input_tranformations.rotate_torch import RandomRotate_torch
 
 
 Section('model', 'model details').params(
@@ -239,7 +241,7 @@ class ImageNetTrainer:
         ]
 
         if random_rotate:
-            image_pipeline.insert(1, RandomRotate())
+            image_pipeline.insert(1, RandomRotate_torch())
 
         if corner_mask:
             image_pipeline.insert(1, MaskCorners())
