@@ -341,7 +341,7 @@ class ImageNetTrainer:
 
                 self.eval_and_log(extra_dict)
 
-            if checkpoint_interval > 0 and (epoch+1) % checkpoint_interval == 0:
+            if checkpoint_interval > 0 and (epoch+1) % checkpoint_interval == 0 and self.gpu == 0:
                 ch.save(self.model.state_dict(), self.log_folder / ('epoch_'+str(epoch+1)+'_weights.pt'))
 
         self.eval_and_log({'epoch':epoch})
@@ -428,18 +428,18 @@ class ImageNetTrainer:
 
                 msg = ', '.join(f'{n}={v}' for n, v in zip(names, values))
                 iterator.set_description(msg)
+                if self.gpu == 0:
+                    if not wandb_dryrun:
+                        if wandb_batch_interval > 0 and ix % wandb_batch_interval == 0:
+                            wandb_log_dict = {}
+                            for name, value in  zip(names,values):
+                                if isinstance(value, list):
+                                    for i in range(len(value)):
+                                        wandb_log_dict[name+'_'+str(i)] = float(value[i])
+                                else:
+                                    wandb_log_dict[name] = float(value)
 
-                if not wandb_dryrun:
-                    if wandb_batch_interval > 0 and ix % wandb_batch_interval == 0:
-                        wandb_log_dict = {}
-                        for name, value in  zip(names,values):
-                            if isinstance(value, list):
-                                for i in range(len(value)):
-                                    wandb_log_dict[name+'_'+str(i)] = float(value[i])
-                            else:
-                                wandb_log_dict[name] = float(value)
-
-                        wandb.log(wandb_log_dict)
+                            wandb.log(wandb_log_dict)
 
 
             ### Logging end
