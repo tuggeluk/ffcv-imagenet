@@ -5,7 +5,7 @@ for FILE in ${1}; do
   python train_imagenet.py \
   --config-file $FILE \
   --data.train_dataset=${2}/train.ffcv \
-  --data.val_dataset=${2}/train.ffcv \
+  --data.val_dataset=${2}/val.ffcv \
   --data.num_workers=${3} \
   --data.in_memory=1 \
   --logging.folder=${4}/$FILE
