@@ -24,28 +24,34 @@ class RandomRotate(Operation):
         def rotate(images, dst):
             angle = np.random.randint(0, 306, size=images.shape[0])
             for i in parallel_range(images.shape[0]):
-                #dst[i] = ndimage.rotate(images[i], angle[i], reshape=False)
-                rotation_mat = np.transpose(np.array([[np.cos(angle[i]), -np.sin(angle[i])],
-                                                      [np.sin(angle[i]), np.cos(angle[i])]]))
-                h, w, _ = images[i].shape
+                dst[i] = ndimage.rotate(images[i], angle[i], reshape=False)
 
-                pivot_point_x = np.floor(h/2)
-                pivot_point_y = np.floor(w/2)
+                # from PIL import Image
+                # Image.fromarray(images[i]).show()
+                # rotated = ndimage.rotate(images[i], angle[i], reshape=False)
+                # Image.fromarray(rotated).show()
 
-                new_img = np.zeros(images[i].shape)
-
-                for height in range(h):  # h = number of row
-                    for width in range(w):  # w = number of col
-                        xy_mat = np.array([[width - pivot_point_x], [height - pivot_point_y]])
-
-                        rotate_mat = np.dot(rotation_mat, xy_mat)
-
-                        new_x = pivot_point_x + rotate_mat[0].astype(np.int32)
-                        new_y = pivot_point_y + rotate_mat[1].astype(np.int32)
-
-                        # if (0 <= new_x <= w - 1) and (0 <= new_y <= h - 1):
-                        #     new_img[new_y, new_x] = images[i, height, width]
-                dst[i] = new_img
+                # rotation_mat = np.transpose(np.array([[np.cos(angle[i]), -np.sin(angle[i])],
+                #                                       [np.sin(angle[i]), np.cos(angle[i])]]))
+                # h, w, _ = images[i].shape
+                #
+                # pivot_point_x = np.floor(h/2)
+                # pivot_point_y = np.floor(w/2)
+                #
+                # new_img = np.zeros(images[i].shape)
+                #
+                # for height in range(h):  # h = number of row
+                #     for width in range(w):  # w = number of col
+                #         xy_mat = np.array([[width - pivot_point_x], [height - pivot_point_y]])
+                #
+                #         rotate_mat = np.dot(rotation_mat, xy_mat)
+                #
+                #         new_x = pivot_point_x + rotate_mat[0].astype(np.int32)
+                #         new_y = pivot_point_y + rotate_mat[1].astype(np.int32)
+                #
+                #         # if (0 <= new_x <= w - 1) and (0 <= new_y <= h - 1):
+                #         #     new_img[new_y, new_x] = images[i, height, width]
+                # dst[i] = new_img
 
             return dst
 
@@ -54,7 +60,8 @@ class RandomRotate(Operation):
 
     def declare_state_and_memory(self, previous_state):
         mem_allocation = AllocationQuery(previous_state.shape, previous_state.dtype)
-        return (previous_state, mem_allocation)
+        state = replace(previous_state, jit_mode=False)
+        return (state, mem_allocation)
 
 
 # check if opencv is faster

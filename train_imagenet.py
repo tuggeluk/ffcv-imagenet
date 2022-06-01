@@ -233,7 +233,7 @@ class ImageNetTrainer:
         self.decoder = RandomResizedCropRGBImageDecoder((res, res))
         image_pipeline: List[Operation] = [
             self.decoder,
-            RandomHorizontalFlip(),
+            #RandomHorizontalFlip(),
             ToTensor(),
             ToDevice(ch.device(this_device), non_blocking=True),
             ToTorchImage(),
@@ -241,7 +241,7 @@ class ImageNetTrainer:
         ]
 
         if random_rotate:
-            image_pipeline.insert(1, RandomRotate_torch())
+            image_pipeline.insert(1, RandomRotate())
 
         if corner_mask:
             image_pipeline.insert(1, MaskCorners())
