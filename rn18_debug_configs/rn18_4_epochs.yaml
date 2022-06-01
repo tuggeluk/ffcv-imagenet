@@ -6,7 +6,11 @@ dist:
   world_size: 1
 logging:
   folder: /tmp/
-  log_level: 0
+  log_level: 1
+  wandb_dryrun: 0
+  wandb_project: rotation_benchmark
+  wandb_run: rn18_4_epoch_debug
+  wandb_batch_interval: 100
 lr:
   lr: 0.5
   lr_peak_epoch: 2
@@ -28,10 +32,12 @@ training:
   optimizer: sgd
   weight_decay: 5e-5
   use_blurpool: 1
-  corner_mask: 1
-  random_rotate: 1
+  corner_mask: 0
+  random_rotate: 0
+  checkpoint_interval: 1
 validation:
   lr_tta: true
   resolution: 256
   corner_mask: 0
   random_rotate: 0
+

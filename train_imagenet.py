@@ -35,7 +35,7 @@ from ffcv.fields.rgb_image import CenterCropRGBImageDecoder, \
 from ffcv.fields.basics import IntDecoder
 from input_tranformations.mask_corners import MaskCorners
 from input_tranformations.rotate import RandomRotate
-from input_tranformations.rotate_torch import RandomRotate_torch
+import wandb
 
 
 Section('model', 'model details').params(
@@ -67,7 +67,11 @@ Section('lr', 'lr scheduling').params(
 
 Section('logging', 'how to log stuff').params(
     folder=Param(str, 'log location', required=True),
-    log_level=Param(int, '0 if only at end 1 otherwise', default=1)
+    log_level=Param(int, '0 if only at end 1 otherwise', default=1),
+    wandb_dryrun=Param(int, '0 if wanb should be logged', default=1),
+    wandb_project=Param(str, 'Name of WandB project', default="ffcv-imagenet"),
+    wandb_run=Param(str, 'Name of WandB run', default="default-ffcv-imagenet"),
+    wandb_batch_interval=Param(int, 'Interval of batches which are logged to WandB', default=-1)
 )
 
 Section('validation', 'Validation parameters stuff').params(
@@ -89,7 +93,8 @@ Section('training', 'training hyper param stuff').params(
     distributed=Param(int, 'is distributed?', default=0),
     use_blurpool=Param(int, 'use blurpool?', default=0),
     corner_mask=Param(int, 'should mask corners at train time', default=0),
-    random_rotate=Param(int, 'should random rotate at train time', default=0)
+    random_rotate=Param(int, 'should random rotate at train time', default=0),
+    checkpoint_interval=Param(int, 'interval of saved checkpoints', default=-1)
 )
 
 Section('dist', 'distributed training options').params(
@@ -318,19 +323,26 @@ class ImageNetTrainer:
 
     @param('training.epochs')
     @param('logging.log_level')
-    def train(self, epochs, log_level):
+    @param('training.checkpoint_interval')
+    def train(self, epochs, log_level, checkpoint_interval):
         for epoch in range(epochs):
+            start_train = time.time()
             res = self.get_resolution(epoch)
             self.decoder.output_size = (res, res)
             train_loss = self.train_loop(epoch)
+            train_epoch_time = time.time() - start_train
 
             if log_level > 0:
                 extra_dict = {
                     'train_loss': train_loss,
-                    'epoch': epoch
+                    'epoch': epoch,
+                    'train_time': train_epoch_time
                 }
 
                 self.eval_and_log(extra_dict)
+
+            if checkpoint_interval > 0 and (epoch+1) % checkpoint_interval == 0:
+                ch.save(self.model.state_dict(), self.log_folder / ('epoch_'+str(epoch+1)+'_weights.pt'))
 
         self.eval_and_log({'epoch':epoch})
         if self.gpu == 0:
@@ -373,7 +385,9 @@ class ImageNetTrainer:
         return model, scaler
 
     @param('logging.log_level')
-    def train_loop(self, epoch, log_level):
+    @param('logging.wandb_dryrun')
+    @param('logging.wandb_batch_interval')
+    def train_loop(self, epoch, log_level, wandb_dryrun, wandb_batch_interval):
         model = self.model
         model.train()
         losses = []
@@ -404,16 +418,30 @@ class ImageNetTrainer:
 
                 group_lrs = []
                 for _, group in enumerate(self.optimizer.param_groups):
-                    group_lrs.append(f'{group["lr"]:.3f}')
+                    group_lrs.append(f'{group["lr"]:.5f}')
 
-                names = ['ep', 'iter', 'shape', 'lrs']
-                values = [epoch, ix, tuple(images.shape), group_lrs]
-                if log_level > 1:
-                    names += ['loss']
-                    values += [f'{loss_train.item():.3f}']
+                names = ['epoch', 'iter', 'lrs']
+                values = [epoch, ix, group_lrs]
+
+                names += ['loss_train']
+                values += [f'{loss_train.item():.3f}']
 
                 msg = ', '.join(f'{n}={v}' for n, v in zip(names, values))
                 iterator.set_description(msg)
+
+                if not wandb_dryrun:
+                    if wandb_batch_interval > 0 and ix % wandb_batch_interval == 0:
+                        wandb_log_dict = {}
+                        for name, value in  zip(names,values):
+                            if isinstance(value, list):
+                                for i in range(len(value)):
+                                    wandb_log_dict[name+'_'+str(i)] = float(value[i])
+                            else:
+                                wandb_log_dict[name] = float(value)
+
+                        wandb.log(wandb_log_dict)
+
+
             ### Logging end
 
     @param('validation.lr_tta')
@@ -439,7 +467,10 @@ class ImageNetTrainer:
         return stats
 
     @param('logging.folder')
-    def initialize_logger(self, folder):
+    @param('logging.wandb_dryrun')
+    @param('logging.wandb_project')
+    @param('logging.wandb_run')
+    def initialize_logger(self, folder, wandb_dryrun, wandb_project, wandb_run):
         self.val_meters = {
             'top_1': torchmetrics.Accuracy(compute_on_step=False).to(self.gpu),
             'top_5': torchmetrics.Accuracy(compute_on_step=False, top_k=5).to(self.gpu),
@@ -461,7 +492,15 @@ class ImageNetTrainer:
             with open(folder / 'params.json', 'w+') as handle:
                 json.dump(params, handle)
 
-    def log(self, content):
+            if not wandb_dryrun:
+                wandb.init(project=wandb_project, name=wandb_run, reinit=True)
+                wandb_config_dict = {}
+                for k in self.all_params.content.keys():
+                    wandb_config_dict[str(k)] = self.all_params.content[k]
+                wandb.config.update(wandb_config_dict)
+
+    @param('logging.wandb_dryrun')
+    def log(self, content, wandb_dryrun):
         print(f'=> Log: {content}')
         if self.gpu != 0: return
         cur_time = time.time()
@@ -472,6 +511,13 @@ class ImageNetTrainer:
                 **content
             }) + '\n')
             fd.flush()
+        if not wandb_dryrun:
+            removes = ['current_lr','train_loss']
+            for rem in removes:
+                if rem in content.keys():
+                    del content[rem]
+
+            wandb.log(content)
 
     @classmethod
     @param('training.distributed')
