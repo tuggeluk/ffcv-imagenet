@@ -2,6 +2,10 @@
 # ./run_config_folder.sh rn18_configs/* /home/ubuntu/ImageNet_ffcv 12 /home/ubuntu/rotation_module/ffcv-imagenet/logs
 #configs_path="rn18_configs/*"
 for FILE in ${1}; do
+  echo $FILE
+  echo ${2}
+  echo ${3}
+  echo ${4}
   python train_imagenet.py \
   --config-file $FILE \
   --data.train_dataset=${2}/train.ffcv \
