@@ -95,7 +95,8 @@ Section('training', 'training hyper param stuff').params(
     use_blurpool=Param(int, 'use blurpool?', default=0),
     corner_mask=Param(int, 'should mask corners at train time', default=0),
     random_rotate=Param(int, 'should random rotate at train time', default=0),
-    checkpoint_interval=Param(int, 'interval of saved checkpoints', default=-1)
+    checkpoint_interval=Param(int, 'interval of saved checkpoints', default=-1),
+    individual_angles=Param(int, 'should each image be individually rotated', default=0)
 )
 
 Section('dist', 'distributed training options').params(
@@ -229,8 +230,9 @@ class ImageNetTrainer:
     @param('data.in_memory')
     @param('training.corner_mask')
     @param('training.random_rotate')
+    @param('training.individual_angles')
     def create_train_loader(self, train_dataset, num_workers, batch_size,
-                            distributed, in_memory, corner_mask, random_rotate):
+                            distributed, in_memory, corner_mask, random_rotate, individual_angles):
         this_device = f'cuda:{self.gpu}'
         train_path = Path(train_dataset)
         assert train_path.is_file()
@@ -242,13 +244,12 @@ class ImageNetTrainer:
             #RandomHorizontalFlip(),
             ToTensor(),
             ToDevice(ch.device(this_device), non_blocking=True),
-            RandomRotate_Torch(),
             ToTorchImage(),
             NormalizeImage(IMAGENET_MEAN, IMAGENET_STD, np.float16)
         ]
 
-        # if random_rotate:
-        #     image_pipeline.insert(1, RandomRotate_Torch())
+        if random_rotate:
+            image_pipeline.insert(3, RandomRotate_Torch(individual_angles))
 
         if corner_mask:
             image_pipeline.insert(1, MaskCorners())
