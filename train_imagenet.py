@@ -480,7 +480,7 @@ class ImageNetTrainer:
         if self.gpu == 0:
             #folder = (Path(folder) / str(self.uid)).absolute()
             folder = (Path(folder)).absolute()
-            folder.mkdir(parents=True)
+            folder.mkdir(parents=True, exist_ok=True)
 
             self.log_folder = folder
             self.start_time = time.time()
