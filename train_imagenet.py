@@ -35,6 +35,7 @@ from ffcv.fields.rgb_image import CenterCropRGBImageDecoder, \
 from ffcv.fields.basics import IntDecoder
 from input_tranformations.mask_corners import MaskCorners
 from input_tranformations.rotate import RandomRotate
+from input_tranformations.rotate_torch import RandomRotate_Torch
 import wandb
 
 
@@ -241,12 +242,13 @@ class ImageNetTrainer:
             #RandomHorizontalFlip(),
             ToTensor(),
             ToDevice(ch.device(this_device), non_blocking=True),
+            RandomRotate_Torch(),
             ToTorchImage(),
             NormalizeImage(IMAGENET_MEAN, IMAGENET_STD, np.float16)
         ]
 
-        if random_rotate:
-            image_pipeline.insert(1, RandomRotate())
+        # if random_rotate:
+        #     image_pipeline.insert(1, RandomRotate_Torch())
 
         if corner_mask:
             image_pipeline.insert(1, MaskCorners())
@@ -324,7 +326,8 @@ class ImageNetTrainer:
     @param('training.epochs')
     @param('logging.log_level')
     @param('training.checkpoint_interval')
-    def train(self, epochs, log_level, checkpoint_interval):
+    @param('logging.wandb_dryrun')
+    def train(self, epochs, log_level, checkpoint_interval, wandb_dryrun):
         for epoch in range(epochs):
             start_train = time.time()
             res = self.get_resolution(epoch)
@@ -347,6 +350,8 @@ class ImageNetTrainer:
         self.eval_and_log({'epoch':epoch})
         if self.gpu == 0:
             ch.save(self.model.state_dict(), self.log_folder / 'final_weights.pt')
+            if wandb_dryrun:
+                self.wandb_run.finish()
 
     def eval_and_log(self, extra_dict={}):
         start_val = time.time()
@@ -494,7 +499,7 @@ class ImageNetTrainer:
                 json.dump(params, handle)
 
             if not wandb_dryrun:
-                wandb.init(project=wandb_project, name=wandb_run, reinit=True)
+                self.wandb_run = wandb.init(project=wandb_project, name=wandb_run, reinit=True)
                 wandb_config_dict = {}
                 for k in self.all_params.content.keys():
                     wandb_config_dict[str(k)] = self.all_params.content[k]
