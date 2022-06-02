@@ -478,7 +478,8 @@ class ImageNetTrainer:
         }
 
         if self.gpu == 0:
-            folder = (Path(folder) / str(self.uid)).absolute()
+            #folder = (Path(folder) / str(self.uid)).absolute()
+            folder = (Path(folder)).absolute()
             folder.mkdir(parents=True)
 
             self.log_folder = folder
