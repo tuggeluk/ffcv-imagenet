@@ -96,7 +96,7 @@ Section('training', 'training hyper param stuff').params(
     corner_mask=Param(int, 'should mask corners at train time', default=0),
     random_rotate=Param(int, 'should random rotate at train time', default=0),
     checkpoint_interval=Param(int, 'interval of saved checkpoints', default=-1),
-    individual_angles=Param(int, 'should each image be individually rotated', default=0)
+    block_rotate=Param(int, 'should the whole tensor be rotated at once', default=0)
 )
 
 Section('dist', 'distributed training options').params(
@@ -230,9 +230,9 @@ class ImageNetTrainer:
     @param('data.in_memory')
     @param('training.corner_mask')
     @param('training.random_rotate')
-    @param('training.individual_angles')
+    @param('training.block_rotate')
     def create_train_loader(self, train_dataset, num_workers, batch_size,
-                            distributed, in_memory, corner_mask, random_rotate, individual_angles):
+                            distributed, in_memory, corner_mask, random_rotate, block_rotate):
         this_device = f'cuda:{self.gpu}'
         train_path = Path(train_dataset)
         assert train_path.is_file()
@@ -249,7 +249,7 @@ class ImageNetTrainer:
         ]
 
         if random_rotate:
-            image_pipeline.insert(3, RandomRotate_Torch(individual_angles))
+            image_pipeline.insert(3, RandomRotate_Torch(block_rotate))
 
         if corner_mask:
             image_pipeline.insert(1, MaskCorners())
@@ -283,8 +283,9 @@ class ImageNetTrainer:
     @param('training.distributed')
     @param('validation.corner_mask')
     @param('validation.random_rotate')
+    @param('training.block_rotate')
     def create_val_loader(self, val_dataset, num_workers, batch_size,
-                          resolution, distributed, corner_mask, random_rotate):
+                          resolution, distributed, corner_mask, random_rotate, block_rotate):
         this_device = f'cuda:{self.gpu}'
         val_path = Path(val_dataset)
         assert val_path.is_file()
@@ -299,7 +300,7 @@ class ImageNetTrainer:
         ]
 
         if random_rotate:
-            image_pipeline.insert(1, RandomRotate())
+            image_pipeline.insert(3, RandomRotate_Torch(block_rotate))
 
         if corner_mask:
             image_pipeline.insert(1, MaskCorners())
@@ -351,7 +352,7 @@ class ImageNetTrainer:
         self.eval_and_log({'epoch':epoch})
         if self.gpu == 0:
             ch.save(self.model.state_dict(), self.log_folder / 'final_weights.pt')
-            if wandb_dryrun:
+            if not wandb_dryrun:
                 self.wandb_run.finish()
 
     def eval_and_log(self, extra_dict={}):

@@ -6,26 +6,26 @@ dist:
 logging:
   folder: /tmp/
   log_level: 1
-  wandb_dryrun: 0
+  wandb_dryrun: 1
   wandb_project: rotation_benchmark
-  wandb_run: rn18_88_epoch_nomask_norotate
-  wandb_batch_interval: 20
+  wandb_run: rn18_4_epoch_debug
+  wandb_batch_interval: 100
 lr:
-  lr: 2
+  lr: 0.5
   lr_peak_epoch: 2
   lr_schedule_type: cyclic
 model:
   arch: resnet18
 resolution:
-  end_ramp: 76
+  end_ramp: 13
   max_res: 192
   min_res: 160
-  start_ramp: 65
+  start_ramp: 11
 training:
   batch_size: 512
   bn_wd: 0
   distributed: 1
-  epochs: 88
+  epochs: 1
   label_smoothing: 0.1
   momentum: 0.9
   optimizer: sgd
@@ -33,9 +33,10 @@ training:
   use_blurpool: 1
   corner_mask: 0
   random_rotate: 0
-  checkpoint_interval: 10
+  checkpoint_interval: 1
 validation:
   lr_tta: true
   resolution: 256
   corner_mask: 0
   random_rotate: 0
+

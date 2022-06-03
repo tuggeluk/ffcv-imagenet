@@ -29,13 +29,13 @@ class RandomRotate_Torch(Operation):
     module: torch.nn.Module
         The module for transformation
     """
-    def __init__(self, individual_angle: bool = True):
+    def __init__(self, block_rotate: bool = False):
         super().__init__()
-        self.individual_angle = individual_angle
+        self.block_rotate = block_rotate
 
 
     def generate_code(self) -> Callable:
-        if self.individual_angle:
+        if not self.block_rotate:
             return self.generate_code_ind()
         return self.generate_code_block()
 

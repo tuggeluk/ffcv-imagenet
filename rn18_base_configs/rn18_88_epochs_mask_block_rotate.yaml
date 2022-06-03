@@ -8,7 +8,7 @@ logging:
   log_level: 1
   wandb_dryrun: 0
   wandb_project: rotation_benchmark
-  wandb_run: rn18_88_epoch_nomask_norotate
+  wandb_run: rn18_88_epoch_mask_block_rotate
   wandb_batch_interval: 20
 lr:
   lr: 2
@@ -31,8 +31,9 @@ training:
   optimizer: sgd
   weight_decay: 5e-5
   use_blurpool: 1
-  corner_mask: 0
-  random_rotate: 0
+  corner_mask: 1
+  random_rotate: 1
+  block_rotate: 1
   checkpoint_interval: 10
 validation:
   lr_tta: true
