@@ -3,7 +3,7 @@
 # ./run_config_folder.sh 'rn50_base_configs/*' /cluster/data/tugg/ImageNet_ffcv 12 /cluster/home/tugg/rotation_module/ffcv-imagenet/logs
 
 # python train_imagenet.py --config-file rn50_base_configs/rn50_88_epochs_mask_rotate.yaml      --data.train_dataset=/cluster/data/tugg/ImageNet_ffcv/train.ffcv     --data.val_dataset=/cluster/data/tugg/ImageNet_ffcv/val.ffcv     --data.num_workers=12 --data.in_memory=1     --logging.folder=/cluster/home/tugg/rotation_module/ffcv-imagenet/logs
-python train_imagenet.py --config-file rn50_base_configs/rn50_88_epochs_mask_rotate.yaml      --data.train_dataset=/cluster/data/tugg/ImageNet_ffcv/train.ffcv     --data.val_dataset=/cluster/data/tugg/ImageNet_ffcv/val.ffcv     --data.num_workers=20 --data.in_memory=1     --logging.folder=/cluster/home/tugg/rotation_module/ffcv-imagenet/logs/rn50_base_configs/rn50_88_epochs_mask_rotate.yaml
+# python train_imagenet.py --config-file rn50_base_configs/rn50_88_epochs_mask_rotate.yaml      --data.train_dataset=/cluster/data/tugg/ImageNet_ffcv/train.ffcv     --data.val_dataset=/cluster/data/tugg/ImageNet_ffcv/val.ffcv     --data.num_workers=20 --data.in_memory=1     --logging.folder=/cluster/home/tugg/rotation_module/ffcv-imagenet/logs/rn50_base_configs/rn50_88_epochs_mask_rotate.yaml
 
 
 
