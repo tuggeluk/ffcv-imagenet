@@ -42,14 +42,14 @@ class RandomRotate_Torch(Operation):
 
     def generate_code_block(self) -> Callable:
         def random_rotate_tensor(images, _):
-
+            images = images.permute(0, 3, 1, 2)
             angle = int(np.random.randint(0, 360, size=1)[0])
             rotated = rotate(images, angle)
 
             # print("print")
             # from PIL import Image
-            # Image.fromarray(np.array(rotated[1].permute(1,2,0).cpu())).show()
-
+            # Image.fromarray(np.array(rotated[1].cpu())).show()
+            rotated = rotated.permute(0, 2, 3, 1)
             return rotated
 
         return random_rotate_tensor
