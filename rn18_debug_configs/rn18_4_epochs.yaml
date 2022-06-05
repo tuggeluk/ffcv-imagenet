@@ -34,7 +34,7 @@ training:
   use_blurpool: 1
   corner_mask: 1
   random_rotate: 1
-  individual_angles: 0
+  block_rotate: 1
   checkpoint_interval: 1
 validation:
   lr_tta: true

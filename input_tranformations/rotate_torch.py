@@ -48,8 +48,9 @@ class RandomRotate_Torch(Operation):
 
             # print("print")
             # from PIL import Image
-            # Image.fromarray(np.array(rotated[1].cpu())).show()
+            # Image.fromarray(np.array(images.permute(0, 2, 3, 1)[2].cpu())).show()
             images = images.permute(0, 2, 3, 1)
+            images = images.contiguous()
             return images
 
         return random_rotate_tensor
