@@ -11,7 +11,7 @@ logging:
   wandb_run: rn18_88_epoch_mask_norotate
   wandb_batch_interval: 20
 lr:
-  lr: 2
+  lr: 1
   lr_peak_epoch: 2
   lr_schedule_type: cyclic
 model:
@@ -22,7 +22,7 @@ resolution:
   min_res: 160
   start_ramp: 65
 training:
-  batch_size: 1024
+  batch_size: 512
   bn_wd: 0
   distributed: 1
   epochs: 88
