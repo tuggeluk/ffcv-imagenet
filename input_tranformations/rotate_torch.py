@@ -44,13 +44,13 @@ class RandomRotate_Torch(Operation):
         def random_rotate_tensor(images, _):
             images = images.permute(0, 3, 1, 2)
             angle = int(np.random.randint(0, 360, size=1)[0])
-            rotated = rotate(images, angle)
+            images = rotate(images, angle)
 
             # print("print")
             # from PIL import Image
             # Image.fromarray(np.array(rotated[1].cpu())).show()
-            rotated = rotated.permute(0, 2, 3, 1)
-            return rotated
+            images = images.permute(0, 2, 3, 1)
+            return images
 
         return random_rotate_tensor
 
