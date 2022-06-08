@@ -1,0 +1,17 @@
+data:
+  in_memory: 1
+  num_workers: 12
+  val_dataset: /home/ubuntu/ImageNet_ffcv/val.ffcv
+logging:
+  log_folder: /tmp/
+  wandb_dryrun: 1
+  wandb_project: rotation_base_configs
+  wandb_run: rn18_88_epoch_mask_block_rotate
+model:
+  arch: resnet18
+validation:
+  resolution: 256
+  use_blurpool: 1
+multi_validate:
+  models_folder: /home/ubuntu/ffcv-imagenet/logs/rn18_base_configs
+  random_runs: 5

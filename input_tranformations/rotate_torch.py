@@ -32,7 +32,11 @@ class RandomRotate_Torch(Operation):
     def __init__(self, block_rotate: bool = False):
         super().__init__()
         self.block_rotate = block_rotate
+        self.angle_config = -1
 
+
+    def set_angle_config(self, angle_config: int = -1):
+        self.angle_config = angle_config
 
     def generate_code(self) -> Callable:
         if not self.block_rotate:
@@ -43,7 +47,12 @@ class RandomRotate_Torch(Operation):
     def generate_code_block(self) -> Callable:
         def random_rotate_tensor(images, _):
             images = images.permute(0, 3, 1, 2)
-            angle = int(np.random.randint(0, 360, size=1)[0])
+            if self.angle_config < 0:
+                angle = int(np.random.randint(0, 360, size=1)[0])
+            else:
+                angle = self.angle_config
+
+
             images = rotate(images, angle)
 
             # print("print")
@@ -68,8 +77,11 @@ class RandomRotate_Torch(Operation):
             # images[:, :, h - 10:h, w : w + 10] = 125
             # images[:, :, h:h+10, w: w + 10] = 255
             # images[:, :, h:h + 10, w-10: w] = 125
+            if self.angle_config < 0:
+                angle = np.random.randint(0, 360, size=images.shape[0])
+            else:
+                angle = np.ones(images.shape[0]) * self.angle_config
 
-            angle = np.random.randint(0, 360, size=images.shape[0])
             for i in parallel_range(len(indices)):
                 images[i] = rotate(images[i], int(angle[i]))
 

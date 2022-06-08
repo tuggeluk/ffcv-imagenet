@@ -2,7 +2,7 @@ data:
   in_memory: 1
   num_workers: 12
 dist:
-  world_size: 4
+  world_size: 1
 logging:
   folder: /tmp/
   log_level: 1
@@ -24,15 +24,15 @@ resolution:
 training:
   batch_size: 512
   bn_wd: 0
-  distributed: 1
+  distributed: 0
   epochs: 1
   label_smoothing: 0.1
   momentum: 0.9
   optimizer: sgd
   weight_decay: 5e-5
   use_blurpool: 1
-  corner_mask: 0
-  random_rotate: 0
+  corner_mask: 1
+  random_rotate: 1
   checkpoint_interval: 1
 validation:
   lr_tta: true
