@@ -2,6 +2,7 @@ import torch as ch
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 import torch.nn.functional as F
+import torch.distributed as dist
 ch.backends.cudnn.benchmark = True
 ch.autograd.profiler.emit_nvtx(False)
 ch.autograd.profiler.profile(False)
@@ -59,7 +60,7 @@ Section('logging', 'how to log stuff').params(
 )
 
 Section('validation', 'Validation parameters stuff').params(
-    batch_size=Param(int, 'The batch size for validation', default=512),
+    batch_size=Param(int, 'The batch size for validation', default=128),
     resolution=Param(int, 'final resized validation image size', default=224),
     corner_mask=Param(int, 'should mask corners at test time', default=0),
     random_rotate=Param(int, 'should random rotate at test time', default=0),
@@ -67,7 +68,8 @@ Section('validation', 'Validation parameters stuff').params(
 )
 
 Section('multi_validate', 'Multi valdiation parameters').params(
-    models_folder=Param(str, 'Destination of pretrained Models', required=True)
+    models_folder=Param(str, 'Destination of pretrained Models', required=True),
+    random_runs=Param(int, 'Number of runs with random anglesto avg over', default=1)
 )
 
 
@@ -96,8 +98,16 @@ class MultiModelEvaluator:
 
         self.uid = str(uuid4())
 
+        os.environ['MASTER_ADDR'] = "localhost"
+        os.environ['MASTER_PORT'] = "12355"
+
+        dist.init_process_group("nccl", rank=self.gpu, world_size=1)
+        ch.cuda.set_device(self.gpu)
+
         self.val_loader = self.create_val_loader()
         self.model, self.scaler = self.create_model_and_scaler()
+
+        self.loss = ch.nn.CrossEntropyLoss(label_smoothing=0.1)
 
 
     @param('data.val_dataset')
@@ -177,6 +187,8 @@ class MultiModelEvaluator:
         model = model.to(memory_format=ch.channels_last)
         model = model.to(self.gpu)
 
+        model = ch.nn.parallel.DistributedDataParallel(model, device_ids=[self.gpu])
+
         return model, scaler
 
 
@@ -252,13 +264,34 @@ class MultiModelEvaluator:
             wandb.log(content)
 
     def collect_checkpoints(self, path):
-        return path
+        checkpoints_dict = {}
+        for file in  os.listdir(path):
+            if file[:6] == 'epoch_':
+                checkpoints_dict[int(file.split("_")[1])] = file
 
+        return checkpoints_dict
 
-    def evaluate_checkpoint(self, name, path):
+    @param('multi_validate.random_runs')
+    def evaluate_checkpoint(self, name, path, random_runs):
         # load model weights
-
+        self.model.load_state_dict(ch.load(os.path.join(path, name)))
         # evaluate on random angles  n-times
+        print("random_angles")
+        self.rotate_transform.set_angle_config(-1)
+        for i in range(random_runs):
+            stats = self.val_loop()
+            print(stats)
+        print("angle 0")
+        self.rotate_transform.set_angle_config(0)
+        for i in range(random_runs):
+            stats = self.val_loop()
+            print(stats)
+        print("asdf")
+            #log to file
+
+            #log to wandb
+
+
 
         # evaluate on fixed angles on 5 degree intervals
 
@@ -273,11 +306,20 @@ class MultiModelEvaluator:
     @param('logging.wandb_run')
     def evaluate_folder(cls, models_folder, log_folder, wandb_project, wandb_run):
         evaluator = cls(gpu=0)
+        # iterate trough config paths
         for config in os.listdir(models_folder):
             #(Re-)initialize logger for new config
-            checkpoints = evaluator.collect_checkpoints(os.path.join(models_folder, config))
 
-        evaluator.eval_and_log()
+            evaluator.initialize_logger(os.path.join(log_folder, config), wandb_project, wandb_run+"_"+config)
+
+            config_path = os.path.join(models_folder, config)
+            checkpoints = evaluator.collect_checkpoints(config_path)
+            sorted_keys = list(checkpoints.keys())
+            list.sort(sorted_keys)
+            for key in sorted_keys:
+                evaluator.evaluate_checkpoint(checkpoints[key], config_path)
+
+        #evaluator.eval_and_log()
 
 
 # Utils
