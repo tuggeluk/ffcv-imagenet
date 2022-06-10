@@ -60,7 +60,7 @@ Section('logging', 'how to log stuff').params(
 )
 
 Section('validation', 'Validation parameters stuff').params(
-    batch_size=Param(int, 'The batch size for validation', default=128),
+    batch_size=Param(int, 'The batch size for validation', default=512),
     resolution=Param(int, 'final resized validation image size', default=224),
     corner_mask=Param(int, 'should mask corners at test time', default=0),
     random_rotate=Param(int, 'should random rotate at test time', default=0),
