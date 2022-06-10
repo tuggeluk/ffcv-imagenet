@@ -69,7 +69,8 @@ Section('validation', 'Validation parameters stuff').params(
 
 Section('multi_validate', 'Multi valdiation parameters').params(
     models_folder=Param(str, 'Destination of pretrained Models', required=True),
-    random_runs=Param(int, 'Number of runs with random anglesto avg over', default=1)
+    random_runs=Param(int, 'Number of runs with random angles to avg over', default=1),
+    degree_interval=Param(int, 'Step size evaluation angle', default=45)
 )
 
 
@@ -265,36 +266,42 @@ class MultiModelEvaluator:
 
     def collect_checkpoints(self, path):
         checkpoints_dict = {}
-        for file in  os.listdir(path):
+        for file in os.listdir(path):
             if file[:6] == 'epoch_':
                 checkpoints_dict[int(file.split("_")[1])] = file
 
         return checkpoints_dict
 
+    def add_dicts(self, collected_stats, new_stats):
+        if collected_stats is None:
+            collected_stats = {'top_1': [], 'top_5': [], 'loss': []}
+        for k in collected_stats.keys():
+            collected_stats[k].append(new_stats[k])
+        return collected_stats
+
     @param('multi_validate.random_runs')
-    def evaluate_checkpoint(self, name, path, random_runs):
+    @param('multi_validate.degree_interval')
+    def evaluate_checkpoint(self, name, path, random_runs, degree_interval):
         # load model weights
         self.model.load_state_dict(ch.load(os.path.join(path, name)))
         # evaluate on random angles  n-times
         print("random_angles")
+        collected_stats = None
         self.rotate_transform.set_angle_config(-1)
         for i in range(random_runs):
             stats = self.val_loop()
-            print(stats)
-        print("angle 0")
-        self.rotate_transform.set_angle_config(0)
-        for i in range(random_runs):
+            collected_stats = self.add_dicts(collected_stats, stats)
+            self.log({name+"_randomAng_"+key: val for key, val in stats.items()})
+        self.log({"random_average_"+ key: np.average(val) for key, val in collected_stats.items()})
+
+        collected_stats = None
+        for i in np.arange(0, 360, degree_interval):
+            self.rotate_transform.set_angle_config(i)
             stats = self.val_loop()
-            print(stats)
-        print("asdf")
-            #log to file
-
-            #log to wandb
-
-
-
-        # evaluate on fixed angles on 5 degree intervals
-
+            collected_stats = self.add_dicts(collected_stats, stats)
+            stats["angle"] = int(i)
+            self.log({name + "_rotatingAng_" + key: val for key, val in stats.items()})
+        self.log({"rotating_average_" + key: np.average(val) for key, val in collected_stats.items()})
 
         return None
 
