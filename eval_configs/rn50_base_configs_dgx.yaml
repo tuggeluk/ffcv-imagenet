@@ -16,7 +16,7 @@ validation:
   random_rotate: 1
   mask_corner: 1
 multi_validate:
-  models_folder: /cluster/home/tugg/rotation_module/ffcv-imagenet/rn50_base_configs
+  models_folder: /cluster/home/tugg/rotation_module/ffcv-imagenet/logs/rn50_base_configs
   #models_folder: /home/tugg/Documents/rotation_module/ffcv-imagenet/logs/rn18_base_configs
   random_runs: 5
   degree_interval: 4
