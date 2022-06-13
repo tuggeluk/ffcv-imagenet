@@ -1,4 +1,5 @@
 import torch as ch
+
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 import torch.nn.functional as F
@@ -37,6 +38,7 @@ from input_tranformations.mask_corners import MaskCorners
 from input_tranformations.rotate import RandomRotate
 from input_tranformations.rotate_torch import RandomRotate_Torch
 import wandb
+from rotation_module.angle_classifier_wrapper import AngleClassifierWrapper
 
 
 Section('model', 'model details').params(
@@ -103,6 +105,10 @@ Section('dist', 'distributed training options').params(
     world_size=Param(int, 'number gpus', default=1),
     address=Param(str, 'address', default='localhost'),
     port=Param(str, 'port', default='12355')
+)
+
+Section('angleclassifier', 'distributed training options').params(
+    attach_classifier=Param(int, 'should an angle classifier be added to the model?', default=1),
 )
 
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406]) * 255
@@ -373,7 +379,8 @@ class ImageNetTrainer:
     @param('model.pretrained')
     @param('training.distributed')
     @param('training.use_blurpool')
-    def create_model_and_scaler(self, arch, pretrained, distributed, use_blurpool):
+    @param('angleclassifier.attach_classifier')
+    def create_model_and_scaler(self, arch, pretrained, distributed, use_blurpool, attach_classifier):
         scaler = GradScaler()
         model = getattr(models, arch)(pretrained=pretrained)
         def apply_blurpool(mod: ch.nn.Module):
@@ -384,6 +391,9 @@ class ImageNetTrainer:
         if use_blurpool: apply_blurpool(model)
 
         model = model.to(memory_format=ch.channels_last)
+        if attach_classifier:
+            model = AngleClassifierWrapper(model)
+
         model = model.to(self.gpu)
 
         if distributed:
