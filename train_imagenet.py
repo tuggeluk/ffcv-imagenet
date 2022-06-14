@@ -1,5 +1,4 @@
 import torch as ch
-
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 import torch.nn.functional as F
@@ -116,7 +115,8 @@ Section('training', 'training hyper param stuff').params(
     corner_mask=Param(int, 'should mask corners at train time', default=0),
     random_rotate=Param(int, 'should random rotate at train time', default=0),
     checkpoint_interval=Param(int, 'interval of saved checkpoints', default=-1),
-    block_rotate=Param(int, 'should the whole tensor be rotated at once', default=0)
+    block_rotate=Param(int, 'should the whole tensor be rotated at once', default=0),
+    p_flip_upright=Param(float, 'percentage of images to be upright', default=0.5),
 )
 
 Section('dist', 'distributed training options').params(
@@ -130,6 +130,8 @@ Section('angleclassifier', 'distributed training options').params(
     train_base=Param(int, 'should the image classifier also be trained', default=1),
     optimizer_scopes=Param(Fastargs_List(str), 'for which scopes should an optimizer be built', default='all, angle'),
     optimizer_targets=Param(Fastargs_List(int), 'what output is targeted images or angles', default='0, 1'),
+    angle_binary=Param(int, 'binary "uprightness" classification or angle regression', default=1),
+    angle_binsize=Param(int, 'span of angles lumped into one class', default=4)
 
 )
 
@@ -288,8 +290,9 @@ class ImageNetTrainer:
     @param('training.corner_mask')
     @param('training.random_rotate')
     @param('training.block_rotate')
+    @param('training.p_flip_upright')
     def create_train_loader(self, train_dataset, num_workers, batch_size,
-                            distributed, in_memory, corner_mask, random_rotate, block_rotate):
+                            distributed, in_memory, corner_mask, random_rotate, block_rotate, p_flip_upright):
         this_device = f'cuda:{self.gpu}'
         train_path = Path(train_dataset)
         assert train_path.is_file()
@@ -305,8 +308,11 @@ class ImageNetTrainer:
             NormalizeImage(IMAGENET_MEAN, IMAGENET_STD, np.float16)
         ]
 
+        # if random_rotate:
+        #     image_pipeline.insert(3, RandomRotate_Torch(block_rotate))
+
         if random_rotate:
-            image_pipeline.insert(3, RandomRotate_Torch(block_rotate))
+            image_pipeline.append(RandomRotate_Torch(block_rotate, p_flip_upright))
 
         if corner_mask:
             image_pipeline.insert(1, MaskCorners())
@@ -356,8 +362,11 @@ class ImageNetTrainer:
             NormalizeImage(IMAGENET_MEAN, IMAGENET_STD, np.float16)
         ]
 
+        # if random_rotate:
+        #     image_pipeline.insert(3, RandomRotate_Torch(block_rotate))
+
         if random_rotate:
-            image_pipeline.insert(3, RandomRotate_Torch(block_rotate))
+            image_pipeline.append(RandomRotate_Torch(block_rotate))
 
         if corner_mask:
             image_pipeline.insert(1, MaskCorners())
@@ -452,11 +461,23 @@ class ImageNetTrainer:
 
         return model, scaler
 
+
+
+    @param('angleclassifier.angle_binsize')
+    def bin_angles(self, angles, angle_binsize):
+
+        offset = int(angle_binsize / 2)
+        angle_class = ((angles < offset) + (angles-360 > -offset))*1
+
+        return angle_class
+
+
     @param('logging.log_level')
     @param('logging.wandb_dryrun')
     @param('logging.wandb_batch_interval')
     @param('angleclassifier.optimizer_targets')
-    def train_loop(self, epoch, log_level, wandb_dryrun, wandb_batch_interval, optimizer_targets):
+    @param('angleclassifier.angle_binary')
+    def train_loop(self, epoch, log_level, wandb_dryrun, wandb_batch_interval, optimizer_targets, angle_binary):
         model = self.model
         model.train()
         losses = []
@@ -469,8 +490,13 @@ class ImageNetTrainer:
 
         iterator = tqdm(self.train_loader)
         for ix, (images, target) in enumerate(iterator):
-            if isinstance(target, ch.Tensor):
-                target = [target]
+            target = [target]
+            if isinstance(images, tuple):
+                if angle_binary:
+                    target.append(self.bin_angles(images[1]))
+                else:
+                    target.append(images[1])
+                images = images[0]
 
 
             ### Training start
