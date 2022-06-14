@@ -34,13 +34,16 @@ class AngleClassifierWrapper(ch.nn.Module):
         super().__init__()
         self.base_model = base_model
         self.extract_list = extract_list
+        self.avgpool = ch.nn.AdaptiveAvgPool2d((1, 1))
+        self.fc1 = ch.nn.Linear(512, 512)
+        self.fc2 = ch.nn.Linear(512, 2)
 
 
 
     def forward(self, x: Tensor) -> (Tensor, Tensor):
 
+        extracted_tensors = dict()
         for name, mod in self.base_model._modules.items():
-            extracted_tensors = dict()
             if name == 'fc':
                 x = ch.flatten(x, 1)
             x = mod(x)
@@ -48,7 +51,9 @@ class AngleClassifierWrapper(ch.nn.Module):
                 extracted_tensors[name] = x
 
         out = x
+        out_wrapped = self.avgpool(extracted_tensors['layer4'])
+        out_wrapped = ch.flatten(out_wrapped, 1)
+        out_wrapped = self.fc1(out_wrapped)
+        out_wrapped = self.fc2(out_wrapped)
 
-        out_wrapped = out
-
-        return out
+        return out, out_wrapped
