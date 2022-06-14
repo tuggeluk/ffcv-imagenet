@@ -14,7 +14,7 @@ logging:
 lr:
   lr: 0.5
   lr_peak_epoch: 2
-  lr_schedule_type: cyclic
+  lr_schedule_type: cyclic,step
 model:
   arch: resnet18
 resolution:

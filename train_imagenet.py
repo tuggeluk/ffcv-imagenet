@@ -25,7 +25,7 @@ from argparse import ArgumentParser
 from fastargs import get_current_config
 from fastargs.decorators import param
 from fastargs import Param, Section
-from fastargs.validation import And, OneOf
+from fastargs.validation import And, OneOf, Checker
 
 from ffcv.pipeline.operation import Operation
 from ffcv.loader import Loader, OrderOption
@@ -40,6 +40,24 @@ from input_tranformations.rotate_torch import RandomRotate_Torch
 import wandb
 from rotation_module.angle_classifier_wrapper import AngleClassifierWrapper
 
+
+class Fastargs_List(Checker):
+    def __init__(self, cast_to = str):
+        self.cast_to = cast_to
+
+    def check(self, value):
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            value = value.split(",")
+            value = [self.cast_to(x.strip()) for x in value]
+            return value
+        wrap_list = list()
+        wrap_list.append(value)
+        return wrap_list
+
+    def help(self):
+        return "a list"
 
 Section('model', 'model details').params(
     arch=Param(And(str, OneOf(models.__dir__())), default='resnet18'),
@@ -61,11 +79,11 @@ Section('data', 'data related stuff').params(
 )
 
 Section('lr', 'lr scheduling').params(
-    step_ratio=Param(float, 'learning rate step ratio', default=0.1),
-    step_length=Param(int, 'learning rate step length', default=30),
-    lr_schedule_type=Param(OneOf(['step', 'cyclic']), default='cyclic'),
-    lr=Param(float, 'learning rate', default=0.5),
-    lr_peak_epoch=Param(int, 'Epoch at which LR peaks', default=2),
+    step_ratio=Param(Fastargs_List(float), 'learning rate step ratio', default=0.1),
+    step_length=Param(Fastargs_List(int), 'learning rate step length', default=30),
+    lr_schedule_type=Param(Fastargs_List(str), default='cyclic'),
+    lr=Param(Fastargs_List(float), 'learning rate', default=0.6),
+    lr_peak_epoch=Param(Fastargs_List(int), 'Epoch at which LR peaks', default=2),
 )
 
 Section('logging', 'how to log stuff').params(
@@ -109,6 +127,10 @@ Section('dist', 'distributed training options').params(
 
 Section('angleclassifier', 'distributed training options').params(
     attach_classifier=Param(int, 'should an angle classifier be added to the model?', default=1),
+    train_base=Param(int, 'should the image classifier also be trained', default=1),
+    optimizer_scopes=Param(Fastargs_List(str), 'for which scopes should an optimizer be built', default='all, angle'),
+    optimizer_targets=Param(Fastargs_List(int), 'what output is targeted images or angles', default='0, 1'),
+
 )
 
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406]) * 255
@@ -119,17 +141,29 @@ DEFAULT_CROP_RATIO = 224/256
 @param('lr.step_ratio')
 @param('lr.step_length')
 @param('training.epochs')
-def get_step_lr(epoch, lr, step_ratio, step_length, epochs):
+def get_step_lr(epoch, opt_ind, lr, step_ratio, step_length, epochs):
     if epoch >= epochs:
         return 0
+    lr = select_opt_ind(opt_ind, lr)
+    step_ratio = select_opt_ind(opt_ind, step_ratio)
+    step_length = select_opt_ind(opt_ind, step_length)
 
     num_steps = epoch // step_length
     return step_ratio**num_steps * lr
 
+
+def select_opt_ind(opt_ind,configs):
+    if len(configs) == 1:
+        return configs[0]
+    else:
+        return configs[opt_ind]
+
 @param('lr.lr')
 @param('training.epochs')
 @param('lr.lr_peak_epoch')
-def get_cyclic_lr(epoch, lr, epochs, lr_peak_epoch):
+def get_cyclic_lr(epoch, opt_ind, lr, epochs, lr_peak_epoch):
+    lr = select_opt_ind(opt_ind, lr)
+    lr_peak_epoch = select_opt_ind(opt_ind, lr_peak_epoch)
     xs = [0, lr_peak_epoch, epochs]
     ys = [1e-4 * lr, lr, 0]
     return np.interp([epoch], xs, ys)[0]
@@ -149,7 +183,8 @@ class BlurPoolConv2d(ch.nn.Module):
 
 class ImageNetTrainer:
     @param('training.distributed')
-    def __init__(self, gpu, distributed):
+    @param('angleclassifier.optimizer_scopes')
+    def __init__(self, gpu, distributed, optimizer_scopes):
         self.all_params = get_current_config()
         self.gpu = gpu
 
@@ -161,7 +196,14 @@ class ImageNetTrainer:
         self.train_loader = self.create_train_loader()
         self.val_loader = self.create_val_loader()
         self.model, self.scaler = self.create_model_and_scaler()
-        self.create_optimizer()
+
+        self.optimizers = []
+        self.losses = []
+        for scope in optimizer_scopes:
+            optimizer, loss = self.create_optimizer(scope_filter=scope)
+            self.optimizers.append(optimizer)
+            self.losses.append(loss)
+
         self.initialize_logger()
         
 
@@ -179,13 +221,13 @@ class ImageNetTrainer:
         dist.destroy_process_group()
 
     @param('lr.lr_schedule_type')
-    def get_lr(self, epoch, lr_schedule_type):
+    def get_lr(self, epoch, opt_ind, lr_schedule_type):
         lr_schedules = {
             'cyclic': get_cyclic_lr,
             'step': get_step_lr
         }
 
-        return lr_schedules[lr_schedule_type](epoch)
+        return lr_schedules[select_opt_ind(opt_ind, lr_schedule_type)](epoch, opt_ind)
 
     # resolution tools
     @param('resolution.min_res')
@@ -211,11 +253,19 @@ class ImageNetTrainer:
     @param('training.weight_decay')
     @param('training.label_smoothing')
     def create_optimizer(self, momentum, optimizer, weight_decay,
-                         label_smoothing):
+                         label_smoothing, scope_filter = 'all'):
         assert optimizer == 'sgd'
+        assert scope_filter in ['all', 'base', 'angle']
 
         # Only do weight decay on non-batchnorm parameters
         all_params = list(self.model.named_parameters())
+
+        if scope_filter == 'base':
+            all_params = {(k,v) for k,v in all_params if ('base_model' in k)}
+        if scope_filter == 'angle':
+            all_params = {(k,v) for k,v in all_params if ('base_model' not in k)}
+
+
         bn_params = [v for k, v in all_params if ('bn' in k)]
         other_params = [v for k, v in all_params if not ('bn' in k)]
         param_groups = [{
@@ -226,8 +276,9 @@ class ImageNetTrainer:
             'weight_decay': weight_decay
         }]
 
-        self.optimizer = ch.optim.SGD(param_groups, lr=1, momentum=momentum)
-        self.loss = ch.nn.CrossEntropyLoss(label_smoothing=label_smoothing)
+        optimizer = ch.optim.SGD(param_groups, lr=1, momentum=momentum)
+        loss = ch.nn.CrossEntropyLoss(label_smoothing=label_smoothing)
+        return optimizer, loss
 
     @param('data.train_dataset')
     @param('data.num_workers')
@@ -367,7 +418,7 @@ class ImageNetTrainer:
         val_time = time.time() - start_val
         if self.gpu == 0:
             self.log(dict({
-                'current_lr': self.optimizer.param_groups[0]['lr'],
+                'current_lr': self.base_optimizer.param_groups[0]['lr'],
                 'top_1': stats['top_1'],
                 'top_5': stats['top_5'],
                 'val_time': val_time
@@ -404,28 +455,41 @@ class ImageNetTrainer:
     @param('logging.log_level')
     @param('logging.wandb_dryrun')
     @param('logging.wandb_batch_interval')
-    def train_loop(self, epoch, log_level, wandb_dryrun, wandb_batch_interval):
+    @param('angleclassifier.optimizer_targets')
+    def train_loop(self, epoch, log_level, wandb_dryrun, wandb_batch_interval, optimizer_targets):
         model = self.model
         model.train()
         losses = []
 
-        lr_start, lr_end = self.get_lr(epoch), self.get_lr(epoch + 1)
-        iters = len(self.train_loader)
-        lrs = np.interp(np.arange(iters), [0, iters], [lr_start, lr_end])
+        lrs = []
+        for i in range(len(self.optimizers)):
+            lr_start, lr_end = self.get_lr(epoch, i), self.get_lr(epoch + 1, i)
+            iters = len(self.train_loader)
+            lrs.append(np.interp(np.arange(iters), [0, iters], [lr_start, lr_end]))
 
         iterator = tqdm(self.train_loader)
         for ix, (images, target) in enumerate(iterator):
-            ### Training start
-            for param_group in self.optimizer.param_groups:
-                param_group['lr'] = lrs[ix]
+            if isinstance(target, ch.Tensor):
+                target = [target]
 
-            self.optimizer.zero_grad(set_to_none=True)
+
+            ### Training start
+            for i in range(len(self.optimizers)):
+                for param_group in self.optimizers[i].param_groups:
+                    param_group['lr'] = lrs[i][ix]
+
+                self.optimizers[i].zero_grad(set_to_none=True)
+
             with autocast():
                 output = self.model(images)
-                loss_train = self.loss(output, target)
 
-            self.scaler.scale(loss_train).backward()
-            self.scaler.step(self.optimizer)
+            sub_losses = []
+            for i in range(len(self.optimizers)):
+                loss_train = self.losses[i](output[optimizer_targets[i]], target[optimizer_targets[i]])
+                self.scaler.scale(loss_train).backward()
+                self.scaler.step(self.optimizers[i])
+                sub_losses.append(loss_train)
+
             self.scaler.update()
             ### Training end
 
@@ -434,7 +498,7 @@ class ImageNetTrainer:
                 losses.append(loss_train.detach())
 
                 group_lrs = []
-                for _, group in enumerate(self.optimizer.param_groups):
+                for _, group in enumerate(self.base_optimizer.param_groups):
                     group_lrs.append(f'{group["lr"]:.5f}')
 
                 names = ['epoch', 'iter', 'lrs']
@@ -476,7 +540,7 @@ class ImageNetTrainer:
                     for k in ['top_1', 'top_5']:
                         self.val_meters[k](output, target)
 
-                    loss_val = self.loss(output, target)
+                    loss_val = self.base_loss(output, target)
                     self.val_meters['loss'](loss_val)
 
         stats = {k: m.compute().item() for k, m in self.val_meters.items()}
