@@ -128,8 +128,8 @@ Section('dist', 'distributed training options').params(
 Section('angleclassifier', 'distributed training options').params(
     attach_classifier=Param(int, 'should an angle classifier be added to the model?', default=1),
     train_base=Param(int, 'should the image classifier also be trained', default=1),
-    optimizer_scopes=Param(Fastargs_List(str), 'for which scopes should an optimizer be built', default='all, angle'),
-    optimizer_targets=Param(Fastargs_List(int), 'what output is targeted images or angles', default='0, 1'),
+    optimizer_scopes=Param(Fastargs_List(str), 'for which scopes should an optimizer be built', default='base'),
+    optimizer_targets=Param(Fastargs_List(int), 'what output is targeted images or angles', default='0'),
     angle_binary=Param(int, 'binary "uprightness" classification or angle regression', default=1),
     angle_binsize=Param(int, 'span of angles lumped into one class', default=4)
 
@@ -480,7 +480,6 @@ class ImageNetTrainer:
     def train_loop(self, epoch, log_level, wandb_dryrun, wandb_batch_interval, optimizer_targets, angle_binary):
         model = self.model
         model.train()
-        losses = []
 
         lrs = []
         for i in range(len(self.optimizers)):
@@ -503,35 +502,51 @@ class ImageNetTrainer:
             for i in range(len(self.optimizers)):
                 for param_group in self.optimizers[i].param_groups:
                     param_group['lr'] = lrs[i][ix]
-
                 self.optimizers[i].zero_grad(set_to_none=True)
+
 
             with autocast():
                 output = self.model(images)
 
             sub_losses = []
+
             for i in range(len(self.optimizers)):
-                loss_train = self.losses[i](output[optimizer_targets[i]], target[optimizer_targets[i]])
-                self.scaler.scale(loss_train).backward()
+                if i == 1:
+                    tar = (ch.rand(target[1].shape)>0.5)*1
+                    tar = tar.to(images.device)
+                    loss_train = self.losses[i](output[optimizer_targets[i]], tar)
+                else:
+                    loss_train = self.losses[i](output[optimizer_targets[i]], target[optimizer_targets[i]])
+
+                if i == len(self.optimizers)-1:
+                    retain_graph = False
+                else:
+                    retain_graph = True
+
+                self.scaler.scale(loss_train).backward(retain_graph=retain_graph)
                 self.scaler.step(self.optimizers[i])
                 sub_losses.append(loss_train)
+
 
             self.scaler.update()
             ### Training end
 
             ### Logging start
-            if log_level > 0:
-                losses.append(loss_train.detach())
+            #if log_level > 0:
+            if False:
 
-                group_lrs = []
-                for _, group in enumerate(self.base_optimizer.param_groups):
-                    group_lrs.append(f'{group["lr"]:.5f}')
+                names = ['epoch', 'iter']
+                values = [epoch, ix]
 
-                names = ['epoch', 'iter', 'lrs']
-                values = [epoch, ix, group_lrs]
+                for i, opt in enumerate(self.optimizers):
+                    for ii, group in enumerate(opt.param_groups):
+                        names.append('lr_o'+str(i)+'_g'+str(ii))
+                        values.append(f'{group["lr"]:.5f}')
 
-                names += ['loss_train']
-                values += [f'{loss_train.item():.3f}']
+                for i, loss in enumerate(sub_losses):
+                    loss.detach()
+                    names.append('loss_train_'+str(i))
+                    values.append(f'{loss.item():.3f}')
 
                 msg = ', '.join(f'{n}={v}' for n, v in zip(names, values))
                 iterator.set_description(msg)
@@ -539,7 +554,7 @@ class ImageNetTrainer:
                     if not wandb_dryrun:
                         if wandb_batch_interval > 0 and ix % wandb_batch_interval == 0:
                             wandb_log_dict = {}
-                            for name, value in  zip(names,values):
+                            for name, value in  zip(names, values):
                                 if isinstance(value, list):
                                     for i in range(len(value)):
                                         wandb_log_dict[name+'_'+str(i)] = float(value[i])
