@@ -22,7 +22,7 @@ resolution:
   min_res: 160
   start_ramp: 11
 training:
-  batch_size: 512
+  batch_size: 26
   bn_wd: 0
   distributed: 0
   epochs: 1
