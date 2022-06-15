@@ -109,6 +109,9 @@ Section('dist', 'distributed training options').params(
 
 Section('angleclassifier', 'distributed training options').params(
     attach_classifier=Param(int, 'should an angle classifier be added to the model?', default=1),
+    loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=0),
+    freeze_base=Param(int, 'should the base model be frozen?', default=0),
+    angle_regress=Param(int, 'should we use regression for the angle', default=0),
 )
 
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406]) * 255
