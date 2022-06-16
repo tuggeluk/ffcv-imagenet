@@ -14,7 +14,7 @@ logging:
 lr:
   lr: 0.5
   lr_peak_epoch: 2
-  lr_schedule_type: cyclic,step
+  lr_schedule_type: cyclic
 model:
   arch: resnet18
 resolution:
@@ -34,11 +34,12 @@ training:
   use_blurpool: 1
   corner_mask: 1
   random_rotate: 1
-  block_rotate: 1
+  block_rotate: 0
   checkpoint_interval: 1
+  eval_only: 1
 validation:
   lr_tta: true
   resolution: 256
-  corner_mask: 0
-  random_rotate: 0
+  corner_mask: 1
+  random_rotate: 1
 

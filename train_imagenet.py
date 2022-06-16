@@ -80,7 +80,7 @@ Section('logging', 'how to log stuff').params(
 Section('validation', 'Validation parameters stuff').params(
     batch_size=Param(int, 'The batch size for validation', default=512),
     resolution=Param(int, 'final resized validation image size', default=224),
-    lr_tta=Param(int, 'should do lr flipping/avging at test time', default=1),
+    lr_tta=Param(int, 'should do lr flipping/avging at test time', default=0),
     corner_mask=Param(int, 'should mask corners at test time', default=0),
     random_rotate=Param(int, 'should random rotate at test time', default=0)
 )
@@ -98,7 +98,8 @@ Section('training', 'training hyper param stuff').params(
     corner_mask=Param(int, 'should mask corners at train time', default=0),
     random_rotate=Param(int, 'should random rotate at train time', default=0),
     checkpoint_interval=Param(int, 'interval of saved checkpoints', default=-1),
-    block_rotate=Param(int, 'should the whole tensor be rotated at once', default=0)
+    block_rotate=Param(int, 'should the whole tensor be rotated at once', default=0),
+    p_flip_upright=Param(float, 'percentage of images to be upright', default=0.5),
 )
 
 Section('dist', 'distributed training options').params(
@@ -112,6 +113,8 @@ Section('angleclassifier', 'distributed training options').params(
     loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=0),
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
     angle_regress=Param(int, 'should we use regression for the angle', default=0),
+    prio_class=Param(float, 'should we use regression for the angle', default=1),
+    prio_angle=Param(float, 'should we use regression for the angle', default=1),
 )
 
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406]) * 255
@@ -213,8 +216,9 @@ class ImageNetTrainer:
     @param('training.optimizer')
     @param('training.weight_decay')
     @param('training.label_smoothing')
+    @param('angleclassifier.angle_regress')
     def create_optimizer(self, momentum, optimizer, weight_decay,
-                         label_smoothing):
+                         label_smoothing, angle_regress):
         assert optimizer == 'sgd'
 
         # Only do weight decay on non-batchnorm parameters
@@ -232,6 +236,11 @@ class ImageNetTrainer:
         self.optimizer = ch.optim.SGD(param_groups, lr=1, momentum=momentum)
         self.loss = ch.nn.CrossEntropyLoss(label_smoothing=label_smoothing)
 
+        if angle_regress:
+            raise NotImplementedError
+        else:
+            self.angle_loss = self.loss
+
     @param('data.train_dataset')
     @param('data.num_workers')
     @param('training.batch_size')
@@ -240,8 +249,9 @@ class ImageNetTrainer:
     @param('training.corner_mask')
     @param('training.random_rotate')
     @param('training.block_rotate')
+    @param('training.p_flip_upright')
     def create_train_loader(self, train_dataset, num_workers, batch_size,
-                            distributed, in_memory, corner_mask, random_rotate, block_rotate):
+                            distributed, in_memory, corner_mask, random_rotate, block_rotate, p_flip_upright):
         this_device = f'cuda:{self.gpu}'
         train_path = Path(train_dataset)
         assert train_path.is_file()
@@ -257,8 +267,11 @@ class ImageNetTrainer:
             NormalizeImage(IMAGENET_MEAN, IMAGENET_STD, np.float16)
         ]
 
+        # if random_rotate:
+        #     image_pipeline.insert(3, RandomRotate_Torch(block_rotate))
+
         if random_rotate:
-            image_pipeline.insert(3, RandomRotate_Torch(block_rotate))
+            image_pipeline.append(RandomRotate_Torch(block_rotate, p_flip_upright))
 
         if corner_mask:
             image_pipeline.insert(1, MaskCorners())
@@ -309,7 +322,7 @@ class ImageNetTrainer:
         ]
 
         if random_rotate:
-            image_pipeline.insert(3, RandomRotate_Torch(block_rotate))
+            image_pipeline.append(RandomRotate_Torch(block_rotate))
 
         if corner_mask:
             image_pipeline.insert(1, MaskCorners())
@@ -404,13 +417,30 @@ class ImageNetTrainer:
 
         return model, scaler
 
+
+    @param('angleclassifier.angle_binsize')
+    def bin_angles(self, angles, angle_binsize):
+
+        offset = int(angle_binsize / 2)
+        angle_class = ((angles < offset) + (angles-360 > -offset))*1
+
+        return angle_class
+
+    @param('angleclassifier.prio_class')
+    @param('angleclassifier.prio_angle')
+    def merge_losses(self, loss_class, loss_angle, prio_class, prio_angle):
+        loss_tot = prio_class*loss_class+prio_angle*loss_angle
+        return loss_tot
+
     @param('logging.log_level')
     @param('logging.wandb_dryrun')
     @param('logging.wandb_batch_interval')
-    def train_loop(self, epoch, log_level, wandb_dryrun, wandb_batch_interval):
+    @param('angleclassifier.loss_scope')
+    @param('angleclassifier.angle_regress')
+    def train_loop(self, epoch, log_level, wandb_dryrun, wandb_batch_interval,
+                   loss_scope, angle_regress):
         model = self.model
         model.train()
-        losses = []
 
         lr_start, lr_end = self.get_lr(epoch), self.get_lr(epoch + 1)
         iters = len(self.train_loader)
@@ -418,6 +448,16 @@ class ImageNetTrainer:
 
         iterator = tqdm(self.train_loader)
         for ix, (images, target) in enumerate(iterator):
+
+            target = [target]
+            if isinstance(images, tuple):
+                if not angle_regress:
+                    target.append(self.bin_angles(images[1]))
+                else:
+                    target.append(images[1])
+                images = images[0]
+
+
             ### Training start
             for param_group in self.optimizer.param_groups:
                 param_group['lr'] = lrs[ix]
@@ -425,7 +465,17 @@ class ImageNetTrainer:
             self.optimizer.zero_grad(set_to_none=True)
             with autocast():
                 output = self.model(images)
-                loss_train = self.loss(output, target)
+                if isinstance(output, tuple):
+                    output = [output]
+
+                if loss_scope == 0:
+                    loss_train = self.loss(output[0], target[0])
+                elif loss_scope == 1:
+                    loss_train = self.angle_loss(output[1], target[1])
+                elif loss_scope == 2:
+                    loss_class = self.loss(output[0], target[0])
+                    loss_angle = self.angle_loss(output[1], target[1])
+                    loss_train = self.merge_losses(loss_class, loss_angle)
 
             self.scaler.scale(loss_train).backward()
             self.scaler.step(self.optimizer)
@@ -434,7 +484,6 @@ class ImageNetTrainer:
 
             ### Logging start
             if log_level > 0:
-                losses.append(loss_train.detach())
 
                 group_lrs = []
                 for _, group in enumerate(self.optimizer.param_groups):
@@ -445,6 +494,12 @@ class ImageNetTrainer:
 
                 names += ['loss_train']
                 values += [f'{loss_train.item():.3f}']
+
+                if loss_scope==2:
+                    names += ['loss_class']
+                    values += [f'{loss_class.item():.3f}']
+                    names += ['loss_angle']
+                    values += [f'{loss_angle.item():.3f}']
 
                 msg = ', '.join(f'{n}={v}' for n, v in zip(names, values))
                 iterator.set_description(msg)
@@ -460,27 +515,40 @@ class ImageNetTrainer:
                                     wandb_log_dict[name] = float(value)
 
                             wandb.log(wandb_log_dict)
-
-
             ### Logging end
 
     @param('validation.lr_tta')
-    def val_loop(self, lr_tta):
+    @param('angleclassifier.loss_scope')
+    def val_loop(self, lr_tta, loss_scope):
         model = self.model
         model.eval()
 
         with ch.no_grad():
             with autocast():
                 for images, target in tqdm(self.val_loader):
+                    if isinstance(images, tuple):
+                        target_angle = images[1]
+                        images = images[0]
                     output = self.model(images)
                     if lr_tta:
                         output += self.model(ch.flip(images, dims=[3]))
+                    if isinstance(output, tuple):
+                        output_angle = output[1]
+                        output = output[0]
 
-                    for k in ['top_1', 'top_5']:
-                        self.val_meters[k](output, target)
+                    if loss_scope == 0 or loss_scope == 2:
+                        for k in ['top_1_class', 'top_5_class']:
+                            self.val_meters[k](output, target)
 
-                    loss_val = self.loss(output, target)
-                    self.val_meters['loss'](loss_val)
+                        loss_val = self.loss(output, target)
+                        self.val_meters['loss_class'](loss_val)
+
+                    if loss_scope == 1 or loss_scope == 2:
+                        self.val_meters['top_1_angle'](output_angle, target_angle)
+
+                        loss_ang = self.angle_loss(output_angle, target_angle)
+                        self.val_meters['loss_angle'](loss_ang)
+
 
         stats = {k: m.compute().item() for k, m in self.val_meters.items()}
         [meter.reset() for meter in self.val_meters.values()]
@@ -490,12 +558,21 @@ class ImageNetTrainer:
     @param('logging.wandb_dryrun')
     @param('logging.wandb_project')
     @param('logging.wandb_run')
-    def initialize_logger(self, folder, wandb_dryrun, wandb_project, wandb_run):
-        self.val_meters = {
-            'top_1': torchmetrics.Accuracy(compute_on_step=False).to(self.gpu),
-            'top_5': torchmetrics.Accuracy(compute_on_step=False, top_k=5).to(self.gpu),
-            'loss': MeanScalarMetric(compute_on_step=False).to(self.gpu)
-        }
+    @param('angleclassifier.loss_scope')
+    @param('angleclassifier.angle_regress')
+    def initialize_logger(self, folder, wandb_dryrun, wandb_project, wandb_run, loss_scope, angle_regress):
+        self.val_meters = {}
+
+        if loss_scope == 0 or loss_scope == 2:
+            self.val_meters['top_1_class'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
+            self.val_meters['top_5_class'] = torchmetrics.Accuracy(compute_on_step=False, top_k=5).to(self.gpu)
+            self.val_meters['loss_class'] = MeanScalarMetric(compute_on_step=False).to(self.gpu)
+        if loss_scope == 1 or loss_scope == 2:
+            if angle_regress:
+                raise NotImplementedError
+            else:
+                self.val_meters['top_1_angle'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
+            self.val_meters['loss_angle'] = MeanScalarMetric(compute_on_step=False).to(self.gpu)
 
         if self.gpu == 0:
             #folder = (Path(folder) / str(self.uid)).absolute()
