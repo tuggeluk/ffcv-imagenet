@@ -95,7 +95,9 @@ class RandomRotate_Torch(Operation):
             # Image.fromarray(np.array(images[1].permute(1, 2, 0).cpu())).show()
             #Image.fromarray(rotate(images[1], int(angle[1])).permute(1,2,0).cpu()).show()
             images = images.permute(0, 2, 3, 1)
-            return images, ch.Tensor(angle).to(images.device)
+            out_tensor = ch.Tensor(angle).type(ch.int32)
+            out_tensor = out_tensor.to(images.device)
+            return images, out_tensor
 
         random_rotate_tensor.is_parallel = True
         random_rotate_tensor.with_indices = True

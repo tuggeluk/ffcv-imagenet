@@ -30,15 +30,20 @@ class AngleClassifierWrapper(ch.nn.Module):
     module: torch.nn.Module
         The module for transformation
     """
-    def __init__(self, base_model, extract_list=['layer1', 'layer2', 'layer3', 'layer4']):
+    def __init__(self, base_model, angle_class):
         super().__init__()
         self.base_model = base_model
-        self.extract_list = extract_list
-        self.avgpool = ch.nn.AdaptiveAvgPool2d((1, 1))
-        self.fc1 = ch.nn.Linear(512, 512)
-        self.fc2 = ch.nn.Linear(512, 2)
+        self.angle_class = angle_class
 
+    def freeze_base(self) -> None:
+        for param in self.base_model.parameters():
+            param.requires_grad = False
+        return None
 
+    def unfreeze_base(self) -> None:
+        for param in self.base_model.parameters():
+            param.requires_grad = False
+        return None
 
     def forward(self, x: Tensor) -> (Tensor, Tensor):
 
@@ -47,13 +52,10 @@ class AngleClassifierWrapper(ch.nn.Module):
             if name == 'fc':
                 x = ch.flatten(x, 1)
             x = mod(x)
-            if name in self.extract_list:
+            if name in self.angle_class.extract_list:
                 extracted_tensors[name] = x
 
         out = x
-        out_wrapped = self.avgpool(extracted_tensors['layer4'])
-        out_wrapped = ch.flatten(out_wrapped, 1)
-        out_wrapped = self.fc1(out_wrapped)
-        out_wrapped = self.fc2(out_wrapped)
+        out_ang = self.angle_class(extracted_tensors)
 
-        return out, out_wrapped
+        return out, out_ang

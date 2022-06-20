@@ -7,10 +7,10 @@ dist:
 logging:
   folder: /tmp/
   log_level: 1
-  wandb_dryrun: 1
+  wandb_dryrun: 0
   wandb_project: rotation_benchmark
   wandb_run: rn18_4_epoch_debug
-  wandb_batch_interval: 100
+  wandb_batch_interval: 10
 lr:
   lr: 0.5
   lr_peak_epoch: 2
@@ -36,9 +36,10 @@ training:
   random_rotate: 1
   block_rotate: 0
   checkpoint_interval: 1
-  eval_only: 1
+  eval_only: 0
+  load_from: /home/tugg/Documents/rotation_module/ffcv-imagenet/logs/rn18_base_configs/rn18_88_epochs_mask_rotate.yaml/final_weights.pt
 validation:
-  lr_tta: true
+  lr_tta: False
   resolution: 256
   corner_mask: 1
   random_rotate: 1

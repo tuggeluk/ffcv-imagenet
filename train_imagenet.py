@@ -39,7 +39,7 @@ from input_tranformations.rotate import RandomRotate
 from input_tranformations.rotate_torch import RandomRotate_Torch
 import wandb
 from rotation_module.angle_classifier_wrapper import AngleClassifierWrapper
-
+from rotation_module.fc_angle_classifier import FcAngleClassifier
 
 Section('model', 'model details').params(
     arch=Param(And(str, OneOf(models.__dir__())), default='resnet18'),
@@ -100,6 +100,7 @@ Section('training', 'training hyper param stuff').params(
     checkpoint_interval=Param(int, 'interval of saved checkpoints', default=-1),
     block_rotate=Param(int, 'should the whole tensor be rotated at once', default=0),
     p_flip_upright=Param(float, 'percentage of images to be upright', default=0.5),
+    load_from=Param(str, 'path of pretrained weights', default="")
 )
 
 Section('dist', 'distributed training options').params(
@@ -110,9 +111,10 @@ Section('dist', 'distributed training options').params(
 
 Section('angleclassifier', 'distributed training options').params(
     attach_classifier=Param(int, 'should an angle classifier be added to the model?', default=1),
-    loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=0),
-    freeze_base=Param(int, 'should the base model be frozen?', default=0),
+    loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=1),
+    freeze_base=Param(int, 'should the base model be frozen?', default=1),
     angle_regress=Param(int, 'should we use regression for the angle', default=0),
+    angle_binsize=Param(int, 'angle width lumped into one class', default=4),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
     prio_angle=Param(float, 'should we use regression for the angle', default=1),
 )
@@ -396,7 +398,9 @@ class ImageNetTrainer:
     @param('training.distributed')
     @param('training.use_blurpool')
     @param('angleclassifier.attach_classifier')
-    def create_model_and_scaler(self, arch, pretrained, distributed, use_blurpool, attach_classifier):
+    @param('training.load_from')
+    @param('angleclassifier.freeze_base')
+    def create_model_and_scaler(self, arch, pretrained, distributed, use_blurpool, attach_classifier, load_from, freeze_base):
         scaler = GradScaler()
         model = getattr(models, arch)(pretrained=pretrained)
         def apply_blurpool(mod: ch.nn.Module):
@@ -408,7 +412,24 @@ class ImageNetTrainer:
 
         model = model.to(memory_format=ch.channels_last)
         if attach_classifier:
-            model = AngleClassifierWrapper(model)
+            ang_class = FcAngleClassifier()
+            model = AngleClassifierWrapper(model, ang_class)
+
+        if not load_from == "":
+            from collections import OrderedDict
+            state_dict = ch.load(os.path.join(load_from))
+            state_dict_renamed = OrderedDict()
+            for k, v in state_dict.items():
+                #rename keys
+                kn = k[7:]
+                if (not "angle_class" in k) and (not "base_model" in k) and attach_classifier:
+                    kn = "base_model."+kn
+                state_dict_renamed[kn] = state_dict[k]
+
+            model.load_state_dict(state_dict_renamed, strict=False)
+
+        if freeze_base:
+            model.freeze_base()
 
         model = model.to(self.gpu)
 
@@ -449,12 +470,12 @@ class ImageNetTrainer:
         iterator = tqdm(self.train_loader)
         for ix, (images, target) in enumerate(iterator):
 
-            target = [target]
+
             if isinstance(images, tuple):
                 if not angle_regress:
-                    target.append(self.bin_angles(images[1]))
+                    target_angle = self.bin_angles(images[1])
                 else:
-                    target.append(images[1])
+                    target_angle = images[1]
                 images = images[0]
 
 
@@ -466,15 +487,16 @@ class ImageNetTrainer:
             with autocast():
                 output = self.model(images)
                 if isinstance(output, tuple):
-                    output = [output]
+                    output_angle = output[1]
+                    output = output[0]
 
                 if loss_scope == 0:
-                    loss_train = self.loss(output[0], target[0])
+                    loss_train = self.loss(output, target)
                 elif loss_scope == 1:
-                    loss_train = self.angle_loss(output[1], target[1])
+                    loss_train = self.angle_loss(output_angle, target_angle)
                 elif loss_scope == 2:
-                    loss_class = self.loss(output[0], target[0])
-                    loss_angle = self.angle_loss(output[1], target[1])
+                    loss_class = self.loss(output, target)
+                    loss_angle = self.angle_loss(output_angle, target_angle)
                     loss_train = self.merge_losses(loss_class, loss_angle)
 
             self.scaler.scale(loss_train).backward()
@@ -519,7 +541,8 @@ class ImageNetTrainer:
 
     @param('validation.lr_tta')
     @param('angleclassifier.loss_scope')
-    def val_loop(self, lr_tta, loss_scope):
+    @param('angleclassifier.angle_regress')
+    def val_loop(self, lr_tta, loss_scope, angle_regress):
         model = self.model
         model.eval()
 
@@ -527,7 +550,11 @@ class ImageNetTrainer:
             with autocast():
                 for images, target in tqdm(self.val_loader):
                     if isinstance(images, tuple):
-                        target_angle = images[1]
+                        if not angle_regress:
+                            target_angle = self.bin_angles(images[1])
+                        else:
+                            target_angle = images[1]
+
                         images = images[0]
                     output = self.model(images)
                     if lr_tta:
