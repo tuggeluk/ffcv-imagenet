@@ -424,9 +424,9 @@ class ImageNetTrainer:
 
         if attach_classifier:
             if classifier == 'fc':
-                ang_class = FcAngleClassifier()
+                ang_class = FcAngleClassifier(model)
             elif classifier == 'fc2':
-                ang_class = Fc2AngleClassifier()
+                ang_class = Fc2AngleClassifier(model)
             else:
                 raise ValueError("Unknown angleclassifier: "+classifier)
             model = AngleClassifierWrapper(model, ang_class)

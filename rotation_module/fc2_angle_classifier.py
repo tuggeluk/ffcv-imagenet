@@ -20,13 +20,13 @@ from ffcv.pipeline.compiler import Compiler
 
 class Fc2AngleClassifier(ch.nn.Module):
 
-    def __init__(self):
+    def __init__(self, in_model):
         super().__init__()
         self.avgpool = ch.nn.AdaptiveAvgPool2d((1, 1))
-        self.fc1 = ch.nn.Linear(512, 512)
-        self.fc2 = ch.nn.Linear(512, 2)
         self.extract_list = ['layer4']
-
+        self.in_size = self._get_recursive_last_size(in_model.get_submodule(self.extract_list[0]))
+        self.fc1 = ch.nn.Linear(self.in_size, 512)
+        self.fc2 = ch.nn.Linear(512, 2)
 
     def forward(self, x: Tensor) -> (Tensor, Tensor):
 
@@ -36,3 +36,17 @@ class Fc2AngleClassifier(ch.nn.Module):
         x = self.fc2(x)
 
         return x
+
+
+    def _get_recursive_last_size(self, module):
+        if len(module._modules) > 0:
+            candidate = module._modules[list(module._modules.keys())[-1]]
+            ret = self._get_recursive_last_size(candidate)
+            if ret > 0:
+                return ret
+            else:
+                for k,m in reversed(module._modules.items()):
+                    if hasattr(m, "num_features"):
+                        return m.num_features
+        else:
+            return -1
