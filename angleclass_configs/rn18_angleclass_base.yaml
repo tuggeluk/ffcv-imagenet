@@ -11,8 +11,8 @@ logging:
   wandb_run: -1
   wandb_batch_interval: 20
 lr:
-  lr: 0.85
-  lr_schedule_type: cyclic
+  lr: 0.01
+  lr_schedule_type: step
 model:
   arch: resnet18
 resolution:

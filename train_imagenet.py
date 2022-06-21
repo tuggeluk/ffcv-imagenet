@@ -62,7 +62,7 @@ Section('data', 'data related stuff').params(
 )
 
 Section('lr', 'lr scheduling').params(
-    step_ratio=Param(float, 'learning rate step ratio', default=0.1),
+    step_ratio=Param(float, 'learning rate step ratio', default=0.5),
     step_length=Param(int, 'learning rate step length', default=30),
     lr_schedule_type=Param(OneOf(['step', 'cyclic']), default='cyclic'),
     lr=Param(float, 'learning rate', default=0.5),

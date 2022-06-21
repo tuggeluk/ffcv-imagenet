@@ -15,7 +15,7 @@ if on_dgx:
     #configs_dict["--logging.folder"] = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
     checkpoints_basedir = "logs/rn50_base_configs"
     logging_basedir = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
-    run_name_prefix = "rn50_"
+    run_name_prefix = "low_lr_rn50_"
 else:
     configs_dict["--config-file"] = "angleclass_configs/rn18_angleclass_base.yaml"
     configs_dict["--data.train_dataset"] = "/home/ubuntu/ImageNet_ffcv/train.ffcv"
@@ -23,7 +23,7 @@ else:
     #configs_dict["--logging.folder"] = "/home/ubuntu/rotation_module/ffcv-imagenet/logs"
     checkpoints_basedir = "logs/rn18_base_configs"
     logging_basedir = "/home/ubuntu/rotation_module/ffcv-imagenet/logs"
-    run_name_prefix = "rn18_"
+    run_name_prefix = "low_lr_rn18_"
 
 
 configs_dict["--data.num_workers"] = 12
