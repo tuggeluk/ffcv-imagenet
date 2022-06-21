@@ -111,9 +111,9 @@ Section('dist', 'distributed training options').params(
 )
 
 Section('angleclassifier', 'distributed training options').params(
-    attach_classifier=Param(int, 'should an angle classifier be added to the model?', default=0),
+    attach_classifier=Param(int, 'should an angle classifier be added to the model?', default=1),
     classifier=Param(str, 'which angle classifier should be used', default='fc'),
-    loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=0),
+    loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=1),
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
     angle_regress=Param(int, 'should we use regression for the angle', default=0),
     angle_binsize=Param(int, 'angle width lumped into one class', default=4),
@@ -404,8 +404,9 @@ class ImageNetTrainer:
     @param('training.load_from')
     @param('angleclassifier.freeze_base')
     @param('angleclassifier.classifier')
+    @param('angleclassifier.loss_scope')
     def create_model_and_scaler(self, arch, pretrained, distributed, use_blurpool, attach_classifier, load_from,
-                                freeze_base, classifier):
+                                freeze_base, classifier, loss_scope):
         scaler = GradScaler()
         model = getattr(models, arch)(pretrained=pretrained)
         def apply_blurpool(mod: ch.nn.Module):
@@ -416,6 +417,10 @@ class ImageNetTrainer:
         if use_blurpool: apply_blurpool(model)
 
         model = model.to(memory_format=ch.channels_last)
+        if loss_scope == 1:
+            # delete img classifier
+            model.fc = None
+
         if attach_classifier:
             if classifier == 'fc':
                 ang_class = FcAngleClassifier()
@@ -442,7 +447,7 @@ class ImageNetTrainer:
         model = model.to(self.gpu)
 
         if distributed:
-            model = ch.nn.parallel.DistributedDataParallel(model, device_ids=[self.gpu], find_unused_parameters=True)
+            model = ch.nn.parallel.DistributedDataParallel(model, device_ids=[self.gpu])
 
         return model, scaler
 
