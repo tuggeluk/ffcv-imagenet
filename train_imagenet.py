@@ -419,7 +419,7 @@ class ImageNetTrainer:
         model = model.to(memory_format=ch.channels_last)
         if loss_scope == 1:
             # delete img classifier
-            model.fc = None
+            model.fc = ch.nn.Identity()
 
         if attach_classifier:
             if classifier == 'fc':
