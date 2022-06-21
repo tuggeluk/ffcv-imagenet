@@ -1,14 +1,14 @@
 data:
-  in_memory: 12
+  in_memory: 1
   num_workers: 12
 dist:
   world_size: 4
 logging:
   folder: /tmp/
   log_level: 1
-  wandb_dryrun: 0
-  wandb_project: rotation_benchmark
-  wandb_run: rn18_88_epoch_mask_block_rotate
+  wandb_dryrun: 1
+  wandb_project: -1
+  wandb_run: -1
   wandb_batch_interval: 20
 lr:
   lr: 0.85
@@ -32,10 +32,14 @@ training:
   use_blurpool: 1
   corner_mask: 1
   random_rotate: 1
-  block_rotate: 1
   checkpoint_interval: 10
+  p_flip_upright: 0.5
 validation:
-  lr_tta: true
+  lr_tta: false
   resolution: 256
-  corner_mask: 0
-  random_rotate: 0
+  corner_mask: 1
+  random_rotate: 1
+  p_flip_upright: 0.5
+angleclassifier:
+  attach_classifier: 1
+  loss_scope: 1

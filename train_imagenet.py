@@ -82,13 +82,13 @@ Section('validation', 'Validation parameters stuff').params(
     resolution=Param(int, 'final resized validation image size', default=224),
     lr_tta=Param(int, 'should do lr flipping/avging at test time', default=0),
     corner_mask=Param(int, 'should mask corners at test time', default=0),
-    random_rotate=Param(int, 'should random rotate at test time', default=0)
+    random_rotate=Param(int, 'should random rotate at test time', default=0),
+    p_flip_upright = Param(float, 'percentage of images to be upright', default=0)
 )
 
 Section('training', 'training hyper param stuff').params(
     eval_only=Param(int, 'eval only?', default=0),
     batch_size=Param(int, 'The batch size', default=512),
-    optimizer=Param(And(str, OneOf(['sgd'])), 'The optimizer', default='sgd'),
     momentum=Param(float, 'SGD momentum', default=0.9),
     weight_decay=Param(float, 'weight decay', default=4e-5),
     epochs=Param(int, 'number of epochs', default=30),
@@ -99,7 +99,7 @@ Section('training', 'training hyper param stuff').params(
     random_rotate=Param(int, 'should random rotate at train time', default=0),
     checkpoint_interval=Param(int, 'interval of saved checkpoints', default=-1),
     block_rotate=Param(int, 'should the whole tensor be rotated at once', default=0),
-    p_flip_upright=Param(float, 'percentage of images to be upright', default=0.5),
+    p_flip_upright=Param(float, 'percentage of images to be upright', default=0),
     load_from=Param(str, 'path of pretrained weights', default="")
 )
 
@@ -110,9 +110,10 @@ Section('dist', 'distributed training options').params(
 )
 
 Section('angleclassifier', 'distributed training options').params(
-    attach_classifier=Param(int, 'should an angle classifier be added to the model?', default=1),
-    loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=1),
-    freeze_base=Param(int, 'should the base model be frozen?', default=1),
+    attach_classifier=Param(int, 'should an angle classifier be added to the model?', default=0),
+    classifier=Param(str, 'which angle classifier should be used', default='fc'),
+    loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=0),
+    freeze_base=Param(int, 'should the base model be frozen?', default=0),
     angle_regress=Param(int, 'should we use regression for the angle', default=0),
     angle_binsize=Param(int, 'angle width lumped into one class', default=4),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
@@ -308,8 +309,9 @@ class ImageNetTrainer:
     @param('validation.corner_mask')
     @param('validation.random_rotate')
     @param('training.block_rotate')
+    @param('validation.p_flip_upright')
     def create_val_loader(self, val_dataset, num_workers, batch_size,
-                          resolution, distributed, corner_mask, random_rotate, block_rotate):
+                          resolution, distributed, corner_mask, random_rotate, block_rotate, p_flip_upright):
         this_device = f'cuda:{self.gpu}'
         val_path = Path(val_dataset)
         assert val_path.is_file()
@@ -324,7 +326,7 @@ class ImageNetTrainer:
         ]
 
         if random_rotate:
-            image_pipeline.append(RandomRotate_Torch(block_rotate))
+            image_pipeline.append(RandomRotate_Torch(block_rotate, p_flip_upright))
 
         if corner_mask:
             image_pipeline.insert(1, MaskCorners())
@@ -400,7 +402,9 @@ class ImageNetTrainer:
     @param('angleclassifier.attach_classifier')
     @param('training.load_from')
     @param('angleclassifier.freeze_base')
-    def create_model_and_scaler(self, arch, pretrained, distributed, use_blurpool, attach_classifier, load_from, freeze_base):
+    @param('angleclassifier.classifier')
+    def create_model_and_scaler(self, arch, pretrained, distributed, use_blurpool, attach_classifier, load_from,
+                                freeze_base, classifier):
         scaler = GradScaler()
         model = getattr(models, arch)(pretrained=pretrained)
         def apply_blurpool(mod: ch.nn.Module):
@@ -412,7 +416,10 @@ class ImageNetTrainer:
 
         model = model.to(memory_format=ch.channels_last)
         if attach_classifier:
-            ang_class = FcAngleClassifier()
+            if classifier == 'fc':
+                ang_class = FcAngleClassifier()
+            else:
+                raise ValueError("Unknown angleclassifier: "+classifier)
             model = AngleClassifierWrapper(model, ang_class)
 
         if not load_from == "":

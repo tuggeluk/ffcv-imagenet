@@ -1,0 +1,78 @@
+from collections import OrderedDict
+import os
+import socket
+
+
+hostname = socket.gethostname()
+on_dgx = 'dgx' in hostname
+
+configs_dict = OrderedDict()
+
+if on_dgx:
+    configs_dict["--config-file"] = "angleclass_configs/rn50_angleclass_base.yaml"
+    configs_dict["--data.train_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/train.ffcv"
+    configs_dict["--data.val_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/val.ffcv"
+    #configs_dict["--logging.folder"] = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
+    checkpoints_basedir = "logs/rn18_base_configs"
+    logging_basedir = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
+else:
+    configs_dict["--config-file"] = "angleclass_configs/rn18_angleclass_base.yaml"
+    configs_dict["--data.train_dataset"] = "/home/ubuntu/ImageNet_ffcv/train.ffcv"
+    configs_dict["--data.val_dataset"] = "/home/ubuntu/ImageNet_ffcv/val.ffcv"
+    #configs_dict["--logging.folder"] = "/home/ubuntu/rotation_module/ffcv-imagenet/logs"
+    checkpoints_basedir = "logs/rn18_base_configs"
+    logging_basedir = "/home/ubuntu/rotation_module/ffcv-imagenet/logs"
+
+configs_dict["--data.num_workers"] = 12
+configs_dict["--data.in_memory"] = 1
+configs_dict["--logging.wandb_dryrun"] = 0
+configs_dict["--logging.wandb_project"] = "training_angle_classifiers"
+#configs_dict["--logging.wandb_run"] = ""
+run_name_prefix = ""
+
+configs_dict["--training.load_from"] = ["mask_rotate", "_mask_norotate"]
+configs_dict["--training.freeze_base"] = [0, 1]
+
+configs_dict["--data.in_memory"] = 1
+configs_dict["--training.epochs"] = 1
+
+def extend_commands(commands:list, append:str) -> list:
+    for i, command in enumerate(commands):
+        commands[i] = command + append
+    return commands
+
+def build_training_commands() -> list:
+    training_commands = [""]
+    wandb_run_names = [run_name_prefix]
+
+    for k,v in configs_dict.items():
+        if isinstance(v, list):
+            training_commands = len(v)*training_commands
+            wandb_run_names = len(v)*wandb_run_names
+            for i, command in enumerate(training_commands):
+                if k == '--training.load_from':
+                    candidate_configs = [x for x in os.listdir(checkpoints_basedir) if v[i%len(v)] in x]
+                    assert len(candidate_configs) == 1
+                    p = os.path.join(checkpoints_basedir, candidate_configs[0], 'final_weights.pt')
+                    training_commands[i] = command+str(k)+"="+p+" "
+                else:
+                    training_commands[i] = command+str(k)+"="+str(v[i%len(v)])+" "
+
+                wandb_run_names[i] = wandb_run_names[i]+k.split(".")[-1]+":"+str(v[i%len(v)])+"__"
+
+        else:
+            training_commands = extend_commands(training_commands, str(k)+"="+str(v)+" ")
+
+    for i, command in enumerate(training_commands):
+        training_commands[i] = command + "--logging.wandb_run="+wandb_run_names[i]
+        training_commands[i] = command + "--logging.folder="+os.path.join(logging_basedir, wandb_run_names[i])
+
+    return training_commands
+
+
+
+if __name__ == '__main__':
+
+    training_commands = build_training_commands()
+    for command in training_commands:
+        os.system('python train_imagenet.py '+command)
