@@ -31,7 +31,7 @@ configs_dict["--logging.wandb_project"] = "training_angle_classifiers"
 run_name_prefix = ""
 
 configs_dict["--training.load_from"] = ["mask_rotate", "_mask_norotate"]
-configs_dict["--training.freeze_base"] = [0, 1]
+configs_dict["--angleclassifier.freeze_base"] = [0, 1]
 
 configs_dict["--data.in_memory"] = 1
 configs_dict["--training.epochs"] = 1
