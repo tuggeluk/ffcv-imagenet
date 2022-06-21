@@ -64,8 +64,8 @@ def build_training_commands() -> list:
             training_commands = extend_commands(training_commands, str(k)+"="+str(v)+" ")
 
     for i, command in enumerate(training_commands):
-        training_commands[i] = command + "--logging.wandb_run="+wandb_run_names[i]
-        training_commands[i] = command + "--logging.folder="+os.path.join(logging_basedir, wandb_run_names[i])
+        training_commands[i] = command + "--logging.folder="+os.path.join(logging_basedir, wandb_run_names[i]) + " " +\
+        "--logging.wandb_run=" + wandb_run_names[i]
 
     return training_commands
 
@@ -75,4 +75,6 @@ if __name__ == '__main__':
 
     training_commands = build_training_commands()
     for command in training_commands:
-        os.system('python train_imagenet.py '+command)
+        final_command = 'python train_imagenet.py '+command
+        print(final_command)
+        os.system(final_command)
