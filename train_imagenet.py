@@ -40,6 +40,7 @@ from input_tranformations.rotate_torch import RandomRotate_Torch
 import wandb
 from rotation_module.angle_classifier_wrapper import AngleClassifierWrapper
 from rotation_module.fc_angle_classifier import FcAngleClassifier
+from rotation_module.fc2_angle_classifier import Fc2AngleClassifier
 
 Section('model', 'model details').params(
     arch=Param(And(str, OneOf(models.__dir__())), default='resnet18'),
@@ -424,6 +425,8 @@ class ImageNetTrainer:
         if attach_classifier:
             if classifier == 'fc':
                 ang_class = FcAngleClassifier()
+            elif classifier == 'fc2':
+                ang_class = Fc2AngleClassifier()
             else:
                 raise ValueError("Unknown angleclassifier: "+classifier)
             model = AngleClassifierWrapper(model, ang_class)
