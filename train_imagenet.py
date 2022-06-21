@@ -387,12 +387,12 @@ class ImageNetTrainer:
         stats = self.val_loop()
         val_time = time.time() - start_val
         if self.gpu == 0:
-            self.log(dict({
+            log_dict = dict({
                 'current_lr': self.optimizer.param_groups[0]['lr'],
-                'top_1': stats['top_1'],
-                'top_5': stats['top_5'],
                 'val_time': val_time
-            }, **extra_dict))
+            })
+            log_dict = {**log_dict, **stats, **extra_dict}
+            self.log(log_dict)
 
         return stats
 
@@ -558,6 +558,7 @@ class ImageNetTrainer:
             with autocast():
                 for images, target in tqdm(self.val_loader):
                     if isinstance(images, tuple):
+                        images = tuple(x[:target.shape[0]] for x in images)
                         if not angle_regress:
                             target_angle = self.bin_angles(images[1])
                         else:
