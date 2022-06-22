@@ -51,18 +51,24 @@ def build_training_commands() -> list:
 
     for k,v in configs_dict.items():
         if isinstance(v, list):
+            init_len = len(training_commands)
+            list_ind = 0
             training_commands = len(v)*training_commands
             wandb_run_names = len(v)*wandb_run_names
-            for i, command in enumerate(training_commands):
+            for i, vv in enumerate(v):
                 if k == '--training.load_from':
-                    candidate_configs = [x for x in os.listdir(checkpoints_basedir) if v[i%len(v)] in x]
+                    candidate_configs = [x for x in os.listdir(checkpoints_basedir) if vv in x]
                     assert len(candidate_configs) == 1
                     p = os.path.join(checkpoints_basedir, candidate_configs[0], 'final_weights.pt')
-                    training_commands[i] = command+str(k)+"="+p+" "
+                    append_cmd = str(k)+"="+p+" "
                 else:
-                    training_commands[i] = command+str(k)+"="+str(v[i%len(v)])+" "
+                    append_cmd = str(k)+"="+str(vv)+" "
 
-                wandb_run_names[i] = wandb_run_names[i]+k.split(".")[-1]+":"+str(v[i%len(v)])+"__"
+                append_name = k.split(".")[-1]+":"+str(vv)+"__"
+                for _ in range(init_len):
+                    training_commands[list_ind] = training_commands[list_ind] + append_cmd
+                    wandb_run_names[list_ind] = wandb_run_names[list_ind] + append_name
+                    list_ind +=1
 
         else:
             training_commands = extend_commands(training_commands, str(k)+"="+str(v)+" ")
