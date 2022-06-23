@@ -433,9 +433,9 @@ class ImageNetTrainer:
         if use_blurpool: apply_blurpool(model)
 
         model = model.to(memory_format=ch.channels_last)
-        # if loss_scope == 1:
-        #     # delete img classifier
-        #     model.fc = ch.nn.Identity()
+        if loss_scope == 1:
+            # delete img classifier
+            model.fc = ch.nn.Identity()
 
         if attach_classifier:
             if angle_regress == 0:
