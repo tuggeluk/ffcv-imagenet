@@ -33,9 +33,11 @@ configs_dict["--logging.wandb_project"] = "training_angle_classifiers"
 #configs_dict["--logging.wandb_run"] = ""
 
 
-configs_dict["--training.load_from"] = ["mask_rotate", "_mask_norotate"]
+#configs_dict["--training.load_from"] = ["mask_rotate", "_mask_norotate"]
+configs_dict["--training.load_from"] = ["mask_rotate"]
 configs_dict["--angleclassifier.freeze_base"] = [0, 1]
 configs_dict["--angleclassifier.classifier"] = ['fc', 'fc2']
+configs_dict["--angleclassifier.classifier"] = [0, 1, 2, 3]
 
 configs_dict["--data.in_memory"] = 1
 #configs_dict["--training.epochs"] = 1

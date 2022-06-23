@@ -4,23 +4,6 @@ FFCV transform that randomly rotates images
 
 import torch as ch
 from torch import Tensor
-import time
-import numpy as np
-import torchvision
-
-from ffcv.fields import IntField, RGBImageField
-from ffcv.fields.decoders import SimpleRGBImageDecoder
-from ffcv.loader import Loader, OrderOption
-from ffcv.pipeline.state import State
-from ffcv.pipeline.operation import Operation, AllocationQuery
-from ffcv.transforms import ToTensor
-from ffcv.writer import DatasetWriter
-from dataclasses import replace
-from numpy.random import permutation, rand
-from typing import Callable, Optional, Tuple
-from torchvision.transforms.functional import rotate
-from ffcv.pipeline.compiler import Compiler
-
 
 class AngleClassifierWrapper(ch.nn.Module):
     """Transform using the given torch.nn.Module

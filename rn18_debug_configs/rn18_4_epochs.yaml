@@ -16,7 +16,7 @@ lr:
   lr_peak_epoch: 2
   lr_schedule_type: cyclic
 model:
-  arch: resnet50
+  arch: resnet18
 resolution:
   end_ramp: 13
   max_res: 192

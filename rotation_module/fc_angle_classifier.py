@@ -1,32 +1,15 @@
 import torch as ch
 from torch import Tensor
-import time
-import numpy as np
-import torchvision
+from .base_angle_classifier import BaseAngleClassifier
 
-from ffcv.fields import IntField, RGBImageField
-from ffcv.fields.decoders import SimpleRGBImageDecoder
-from ffcv.loader import Loader, OrderOption
-from ffcv.pipeline.state import State
-from ffcv.pipeline.operation import Operation, AllocationQuery
-from ffcv.transforms import ToTensor
-from ffcv.writer import DatasetWriter
-from dataclasses import replace
-from numpy.random import permutation, rand
-from typing import Callable, Optional, Tuple
-from torchvision.transforms.functional import rotate
-from ffcv.pipeline.compiler import Compiler
+class FcAngleClassifier(BaseAngleClassifier):
 
-
-class FcAngleClassifier(ch.nn.Module):
-
-    def __init__(self, in_model):
+    def __init__(self, in_model, out_channels):
         super().__init__()
         self.avgpool = ch.nn.AdaptiveAvgPool2d((1, 1))
         self.extract_list = ['layer4']
         self.in_size = self._get_recursive_last_size(in_model.get_submodule(self.extract_list[0]))
-        self.fc = ch.nn.Linear(self.in_size, 2)
-
+        self.fc = ch.nn.Linear(self.in_size, out_channels)
 
     def forward(self, x: Tensor) -> (Tensor, Tensor):
 
@@ -35,16 +18,3 @@ class FcAngleClassifier(ch.nn.Module):
         x = self.fc(x)
 
         return x
-
-    def _get_recursive_last_size(self, module):
-        if len(module._modules) > 0:
-            candidate = module._modules[list(module._modules.keys())[-1]]
-            ret = self._get_recursive_last_size(candidate)
-            if ret > 0:
-                return ret
-            else:
-                for k,m in reversed(module._modules.items()):
-                    if hasattr(m, "num_features"):
-                        return m.num_features
-        else:
-            return -1
