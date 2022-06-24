@@ -41,6 +41,7 @@ import wandb
 from rotation_module.angle_classifier_wrapper import AngleClassifierWrapper
 from rotation_module.fc_angle_classifier import FcAngleClassifier
 from rotation_module.fc2_angle_classifier import Fc2AngleClassifier
+from rotation_module.deep_angle_classifier import DeepAngleClassifier
 
 Section('model', 'model details').params(
     arch=Param(And(str, OneOf(models.__dir__())), default='resnet18'),
@@ -113,7 +114,7 @@ Section('dist', 'distributed training options').params(
 
 Section('angleclassifier', 'distributed training options').params(
     attach_classifier=Param(int, 'should an angle classifier be added to the model?', default=1),
-    classifier=Param(str, 'which angle classifier should be used', default='fc'),
+    classifier=Param(str, 'which angle classifier should be used', default='deep'),
     loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=1),
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
     angle_regress=Param(int,
@@ -122,6 +123,10 @@ Section('angleclassifier', 'distributed training options').params(
     angle_binsize=Param(int, 'angle width lumped into one class', default=4),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
     prio_angle=Param(float, 'should we use regression for the angle', default=1),
+)
+
+Section('angle_testmode', 'configure how testing performed').params(
+    enabled=Param(int, 'should angle-correction be done during testing', default=0),
 )
 
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406]) * 255
@@ -453,6 +458,8 @@ class ImageNetTrainer:
                 ang_class = FcAngleClassifier(model, num_out)
             elif classifier == 'fc2':
                 ang_class = Fc2AngleClassifier(model, num_out)
+            elif classifier == 'deep':
+                ang_class = DeepAngleClassifier(model, num_out)
             else:
                 raise ValueError("Unknown angleclassifier: "+classifier)
             model = AngleClassifierWrapper(model, ang_class)
