@@ -119,7 +119,7 @@ Section('angleclassifier', 'distributed training options').params(
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
     angle_regress=Param(int,
         '0: uprightness classification, 1: angle regression, 2: angle regression via classification, 3: regres against sin+cos'
-                        , default=3),
+                        , default=1),
     angle_binsize=Param(int, 'angle width lumped into one class', default=4),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
     prio_angle=Param(float, 'should we use regression for the angle', default=1),
@@ -385,6 +385,10 @@ class ImageNetTrainer:
             train_loss = self.train_loop(epoch)
             train_epoch_time = time.time() - start_train
 
+            if ch.isnan(train_loss):
+                print("Loss is NAN - abort mission")
+                break
+
             if log_level > 0:
                 extra_dict = {
                     'train_loss': train_loss,
@@ -640,6 +644,8 @@ class ImageNetTrainer:
 
                             wandb.log(wandb_log_dict)
             ### Logging end
+        return loss_train
+
 
     @param('validation.lr_tta')
     @param('angleclassifier.loss_scope')
