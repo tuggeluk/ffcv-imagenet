@@ -119,7 +119,7 @@ Section('angleclassifier', 'distributed training options').params(
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
     angle_regress=Param(int,
         '0: uprightness classification, 1: angle regression, 2: angle regression via classification, 3: regres against sin+cos'
-                        , default=1),
+                        , default=3),
     angle_binsize=Param(int, 'angle width lumped into one class', default=4),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
     prio_angle=Param(float, 'should we use regression for the angle', default=1),
@@ -391,7 +391,7 @@ class ImageNetTrainer:
 
             if log_level > 0:
                 extra_dict = {
-                    'train_loss': train_loss,
+                    'train_loss': train_loss.item(),
                     'epoch': epoch,
                     'train_time': train_epoch_time
                 }
@@ -556,7 +556,7 @@ class ImageNetTrainer:
         min_diff = ch.min(ch.stack((ch.abs(tar_angle - angles), ch.abs(ch.abs(tar_angle-angles)-360))), 0)[0]
         min_diff = ch.nan_to_num(min_diff, 359)
         angles_within = (min_diff < (angle_binsize/2))*1
-        return angles_within
+        return ch.squeeze(angles_within)
 
     @param('angleclassifier.prio_class')
     @param('angleclassifier.prio_angle')
