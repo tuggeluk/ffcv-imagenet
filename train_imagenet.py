@@ -123,6 +123,7 @@ Section('angleclassifier', 'distributed training options').params(
     angle_binsize=Param(int, 'angle width lumped into one class', default=4),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
     prio_angle=Param(float, 'should we use regression for the angle', default=1),
+    flatten=Param(And(str, OneOf(['basic', 'extended'])), 'flatten with avg pool (1,1) or (5,5)', default='basic'),
 )
 
 Section('angle_testmode', 'configure how testing performed').params(
@@ -426,8 +427,9 @@ class ImageNetTrainer:
     @param('angleclassifier.classifier')
     @param('angleclassifier.loss_scope')
     @param('angleclassifier.angle_regress')
+    @param('angleclassifier.flatten')
     def create_model_and_scaler(self, arch, pretrained, distributed, use_blurpool, attach_classifier, load_from,
-                                freeze_base, classifier, loss_scope, angle_regress):
+                                freeze_base, classifier, loss_scope, angle_regress, flatten):
         scaler = GradScaler()
         model = getattr(models, arch)(pretrained=pretrained)
         def apply_blurpool(mod: ch.nn.Module):
@@ -459,7 +461,11 @@ class ImageNetTrainer:
             elif classifier == 'fc2':
                 ang_class = Fc2AngleClassifier(model, num_out)
             elif classifier == 'deep':
-                ang_class = DeepAngleClassifier(model, num_out)
+                ang_class = DeepAngleClassifier(model, num_out, flatten=flatten)
+            elif classifier == 'deepx2':
+                ang_class = DeepAngleClassifier(model, num_out, layers=(2, 2, 2, 2), flatten=flatten)
+            elif classifier == 'deepslant':
+                ang_class = DeepAngleClassifier(model, num_out, layers=(1, 2, 2, 3), flatten=flatten)
             else:
                 raise ValueError("Unknown angleclassifier: "+classifier)
             model = AngleClassifierWrapper(model, ang_class)
@@ -518,6 +524,35 @@ class ImageNetTrainer:
             ang_b = ch.cos(angles)
             angles = ch.stack((ang_a, ang_b), -1)
         return angles
+
+
+    @param('angleclassifier.angle_regress')
+    def decode_angle(self, output_angle, angle_regress):
+
+        if angle_regress == 1:
+            output_angle[output_angle < 0] = 360 + output_angle[output_angle < 0]
+            angles = output_angle
+        elif angle_regress == 2:
+            angles = ch.argmax(output_angle, -1)
+        elif angle_regress == 3:
+            sin_greater_zero = output_angle[:, 0] > 0
+            output_angle[sin_greater_zero, 0] = ch.acos(output_angle[sin_greater_zero, 1]).type(output_angle.dtype)
+            output_angle[-1*sin_greater_zero, 0] = (2*np.pi - ch.acos(output_angle[-1*sin_greater_zero, 1])).type(output_angle.dtype)
+            angles = output_angle[:, 0]/np.pi*180
+        else:
+            raise NotImplementedError
+
+        return angles
+
+    @param('angleclassifier.angle_binsize')
+    def angle_within_binsize(self, output_angle, target_angle, angle_binsize):
+        angles = self.decode_angle(output_angle)
+        tar_angle = self.decode_angle(target_angle)
+
+        min_diff = ch.min(ch.stack((ch.abs(tar_angle - angles), ch.abs(ch.abs(tar_angle-angles)-360))), 0)[0]
+        min_diff = ch.nan_to_num(min_diff, 359)
+        angles_within = (min_diff < (angle_binsize/2))*1
+        return angles_within
 
     @param('angleclassifier.prio_class')
     @param('angleclassifier.prio_angle')
@@ -648,6 +683,11 @@ class ImageNetTrainer:
                         else:
                             raise NotImplementedError
 
+                        if not angle_regress == 0:
+                            dummy_target = ch.ones(target_angle.shape[0]).type(ch.int).to(self.gpu)
+                            angle_within = self.angle_within_binsize(output_angle, target_angle)
+                            self.val_meters['top_1_within_binsize'](angle_within, dummy_target)
+
                         loss_ang = self.angle_loss(output_angle, target_angle)
                         self.val_meters['loss_angle'](loss_ang)
 
@@ -681,6 +721,9 @@ class ImageNetTrainer:
                 self.val_meters['mse_angle'] = torchmetrics.MeanSquaredError(compute_on_step=False).to(self.gpu)
             else:
                 raise NotImplementedError
+
+            if not angle_regress == 0:
+                self.val_meters['top_1_within_binsize'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
 
             self.val_meters['loss_angle'] = MeanScalarMetric(compute_on_step=False).to(self.gpu)
 

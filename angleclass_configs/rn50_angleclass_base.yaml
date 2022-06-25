@@ -39,7 +39,7 @@ validation:
   resolution: 256
   corner_mask: 1
   random_rotate: 1
-  p_flip_upright: 0.5
+  p_flip_upright: 0
 angleclassifier:
   attach_classifier: 1
   loss_scope: 1

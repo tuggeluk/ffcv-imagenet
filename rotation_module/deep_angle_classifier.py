@@ -8,7 +8,7 @@ from torchvision.models.resnet import BasicBlock, Bottleneck, conv1x1
 
 class DeepAngleClassifier(BaseAngleClassifier):
 
-    def __init__(self, in_model, out_channels):
+    def __init__(self, in_model, out_channels, layers=(1, 1, 1, 1), flatten = 'basic'):
         super().__init__()
 
         # use ResNet Defaults
@@ -19,21 +19,27 @@ class DeepAngleClassifier(BaseAngleClassifier):
         self.base_width = 64
 
         self.avgpool = ch.nn.AdaptiveAvgPool2d((1, 1))
-        self.extract_list = ['layer1', 'layer2', 'layer3', 'layer4']
+        self.extract_list = ['maxpool', 'layer1', 'layer2', 'layer3', 'layer4']
 
-        self.in_sizes = [self._get_recursive_last_size(in_model.get_submodule(x)) for x in self.extract_list]
+        self.in_sizes = [self._get_recursive_last_size(in_model.get_submodule(x)) for x in self.extract_list if 'layer' in x]
 
-        #self.layer1 = self._make_layer(BasicBlock, self.in_sizes[0], 1)
-
-        self.layer2 = self._make_layer(BasicBlock, self.in_sizes[1], 1, stride=2, dilate=False)
+        self.layer1 = self._make_layer(BasicBlock, self.in_sizes[0], layers[0])
+        self.ds1 = self._create_downsample(self.in_sizes[0]*2, self.in_sizes[0])
+        self.layer2 = self._make_layer(BasicBlock, self.in_sizes[1], layers[1], stride=2, dilate=False)
         self.ds2 = self._create_downsample(self.in_sizes[1]*2, self.in_sizes[1])
-        self.layer3 = self._make_layer(BasicBlock, self.in_sizes[2], 1, stride=2, dilate=False)
+        self.layer3 = self._make_layer(BasicBlock, self.in_sizes[2], layers[2], stride=2, dilate=False)
         self.ds3 = self._create_downsample(self.in_sizes[2]*2, self.in_sizes[2])
-        self.layer4 = self._make_layer(BasicBlock, self.in_sizes[3], 1, stride=2, dilate=False)
+        self.layer4 = self._make_layer(BasicBlock, self.in_sizes[3], layers[3], stride=2, dilate=False)
         self.ds4 = self._create_downsample(self.in_sizes[3]*2, self.in_sizes[3])
 
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = ch.nn.Linear(self.in_sizes[-1], out_channels)
+        if flatten == 'basic':
+            self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+            self.fc = ch.nn.Linear(self.in_sizes[-1], out_channels)
+        elif flatten == 'extended':
+            self.avgpool = nn.AdaptiveAvgPool2d((5, 5))
+            self.fc = ch.nn.Linear(self.in_sizes[-1]*25, out_channels)
+        else:
+            raise NotImplementedError
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -45,7 +51,9 @@ class DeepAngleClassifier(BaseAngleClassifier):
 
     def forward(self, x: Tensor) -> (Tensor, Tensor):
 
-        x_out = self.layer2(x['layer1'])
+        x_out = self.layer1(x['maxpool'])
+        x_out = self.ds1(ch.cat((x_out, x['layer1']), 1))
+        x_out = self.layer2(x_out)
         x_out = self.ds2(ch.cat((x_out, x['layer2']), 1))
         x_out = self.layer3(x_out)
         x_out = self.ds3(ch.cat((x_out, x['layer3']), 1))
