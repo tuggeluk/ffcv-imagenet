@@ -385,7 +385,7 @@ class ImageNetTrainer:
             train_loss = self.train_loop(epoch)
             train_epoch_time = time.time() - start_train
 
-            if ch.isnan(train_loss):
+            if ch.isnan(train_loss) or ch.isinf(train_loss):
                 print("Loss is NAN - abort mission")
                 break
 
