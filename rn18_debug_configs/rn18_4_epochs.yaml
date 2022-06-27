@@ -37,10 +37,10 @@ training:
   block_rotate: 0
   checkpoint_interval: 1
   eval_only: 0
-  load_from: /home/tugg/Documents/rotation_module/ffcv-imagenet/logs/rn18_base_configs/rn18_88_epochs_mask_rotate.yaml/final_weights.pt
+  load_from: /home/tugg/Documents/rotation_module/ffcv-imagenet/logs/low_lr_rn18_load_from:mask_rotate__freeze_base:1__lr:0.05__classifier:deep__angle_regress:3__flatten:basic__max_res:256__/final_weights.pt
 validation:
   lr_tta: False
-  resolution: 256
+  resolution: 160
   corner_mask: 1
   random_rotate: 1
 

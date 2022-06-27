@@ -34,10 +34,23 @@ class DeepAngleClassifier(BaseAngleClassifier):
 
         if flatten == 'basic':
             self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-            self.fc = ch.nn.Linear(self.in_sizes[-1], out_channels)
+            if isinstance(out_channels, list):
+                self.fc1 = ch.nn.Linear(self.in_sizes[-1], out_channels[0])
+                self.fc2 = ch.nn.Linear(self.in_sizes[-1], out_channels[1])
+                self.multi_out = True
+            else:
+                self.fc = ch.nn.Linear(self.in_sizes[-1], out_channels)
+                self.multi_out = False
         elif flatten == 'extended':
             self.avgpool = nn.AdaptiveAvgPool2d((5, 5))
-            self.fc = ch.nn.Linear(self.in_sizes[-1]*25, out_channels)
+            if isinstance(out_channels, list):
+                self.fc1 = ch.nn.Linear(self.in_sizes[-1]*25, out_channels[0])
+                self.fc2 = ch.nn.Linear(self.in_sizes[-1]*25, out_channels[1])
+                self.multi_out = True
+            else:
+                self.fc = ch.nn.Linear(self.in_sizes[-1]*25, out_channels)
+                self.multi_out = False
+
         else:
             raise NotImplementedError
 
@@ -62,7 +75,10 @@ class DeepAngleClassifier(BaseAngleClassifier):
 
         x_out = self.avgpool(x_out)
         x_out = ch.flatten(x_out, 1)
-        x_out = self.fc(x_out)
+        if self.multi_out:
+            x_out = (self.fc1(x_out), self.fc2(x_out))
+        else:
+            x_out = self.fc(x_out)
 
         return x_out
 

@@ -118,7 +118,7 @@ Section('angleclassifier', 'distributed training options').params(
     loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=1),
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
     angle_regress=Param(int,
-        '0: uprightness classification, 1: angle regression, 2: angle regression via classification, 3: regres against sin+cos'
+        '0: uprightness classification, 1: angle regression, 2: angle regression via classification, 3: classify against sin+cos'
                         , default=3),
     angle_binsize=Param(int, 'angle width lumped into one class', default=4),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
@@ -263,7 +263,10 @@ class ImageNetTrainer:
             #self.target_template = target_template.expand(batch_size, target_template.shape[0])
             self.target_template = target_template
         elif angle_regress == 3:
-            self.angle_loss = ch.nn.MSELoss()
+            nr_classes = 180
+            self.bin_tresh = ch.arange(-1, 1, 2 / nr_classes).to(self.gpu).repeat(batch_size, 1)
+
+            self.angle_loss = self.loss
 
 
     @param('data.train_dataset')
@@ -456,7 +459,7 @@ class ImageNetTrainer:
             elif angle_regress == 2:
                 num_out = 360
             elif angle_regress == 3:
-                num_out = 2
+                num_out = [180, 180]
             else:
                 raise ValueError("Unknown angle regress: "+angle_regress)
 
@@ -504,6 +507,10 @@ class ImageNetTrainer:
         angle_class = ((angles < offset) + (angles-360 > -offset))*1
         return angle_class
 
+    def bin_sin_cos(self, values):
+        binned = ch.sum(ch.unsqueeze(values, -1) < self.bin_tresh[:values.shape[0]], -1)
+        return binned
+
     @param('angleclassifier.angle_regress')
     def prep_angle_target(self, angles, val_mode=False, angle_regress=None):
         if angle_regress == 0:
@@ -524,9 +531,9 @@ class ImageNetTrainer:
                 angles = ch.stack(targets)
         elif angle_regress == 3:
             angles = angles/180*np.pi
-            ang_a = ch.sin(angles)
-            ang_b = ch.cos(angles)
-            angles = ch.stack((ang_a, ang_b), -1)
+            ang_a = self.bin_sin_cos(ch.sin(angles))
+            ang_b = self.bin_sin_cos(ch.cos(angles))
+            angles = (ang_a, ang_b)
         return angles
 
 
@@ -539,23 +546,33 @@ class ImageNetTrainer:
         elif angle_regress == 2:
             angles = ch.argmax(output_angle, -1)
         elif angle_regress == 3:
-            sin_greater_zero = output_angle[:, 0] > 0
-            output_angle[sin_greater_zero, 0] = ch.acos(output_angle[sin_greater_zero, 1]).type(output_angle.dtype)
-            output_angle[-1*sin_greater_zero, 0] = (2*np.pi - ch.acos(output_angle[-1*sin_greater_zero, 1])).type(output_angle.dtype)
-            angles = output_angle[:, 0]/np.pi*180
+            #if abs > 1 "wrap diference around 1"
+            # output_angle[ch.abs(output_angle) > 1] = (2 - ch.abs(output_angle[ch.abs(output_angle) > 1])) * ch.sign(
+            #     output_angle[ch.abs(output_angle) > 1])
+            pred_sin = self.bin_tresh[1, ch.argmax(output_angle[0], -1)]
+            pred_cos = self.bin_tresh[1, ch.argmax(output_angle[1], -1)]
+
+            sin_below_zero = pred_sin < 0
+            angles = ch.acos(pred_cos)/np.pi*180
+            angles[sin_below_zero] = 360 - angles[sin_below_zero]
+
         else:
             raise NotImplementedError
 
         return angles
 
     @param('angleclassifier.angle_binsize')
-    def angle_within_binsize(self, output_angle, target_angle, angle_binsize):
+    @param('angleclassifier.angle_regress')
+    def angle_within_binsize(self, output_angle, target_angle, angle_binsize, angle_regress):
         angles = self.decode_angle(output_angle)
-        tar_angle = self.decode_angle(target_angle)
+        if angle_regress == 2:
+            tar_angle = target_angle
+        else:
+            tar_angle = self.decode_angle(target_angle)
 
         min_diff = ch.min(ch.stack((ch.abs(tar_angle - angles), ch.abs(ch.abs(tar_angle-angles)-360))), 0)[0]
         min_diff = ch.nan_to_num(min_diff, 359)
-        angles_within = (min_diff < (angle_binsize/2))*1
+        angles_within = (min_diff <= (angle_binsize/2))*1
         return ch.squeeze(angles_within)
 
     @param('angleclassifier.prio_class')
@@ -563,6 +580,15 @@ class ImageNetTrainer:
     def merge_losses(self, loss_class, loss_angle, prio_class, prio_angle):
         loss_tot = prio_class*loss_class+prio_angle*loss_angle
         return loss_tot
+
+    def compute_angle_loss(self, output_angle,target_angle):
+        if isinstance(output_angle,tuple):
+            tot_loss = 0
+            for i in range(len(output_angle)):
+                tot_loss += self.angle_loss(output_angle[i], target_angle[i])
+            return tot_loss
+        else:
+            return self.angle_loss(output_angle, target_angle)
 
     @param('logging.log_level')
     @param('logging.wandb_dryrun')
@@ -599,10 +625,10 @@ class ImageNetTrainer:
                 if loss_scope == 0:
                     loss_train = self.loss(output, target)
                 elif loss_scope == 1:
-                    loss_train = self.angle_loss(output_angle, target_angle)
+                    loss_train = self.compute_angle_loss(output_angle, target_angle)
                 elif loss_scope == 2:
                     loss_class = self.loss(output, target)
-                    loss_angle = self.angle_loss(output_angle, target_angle)
+                    loss_angle = self.compute_angle_loss(output_angle, target_angle)
                     loss_train = self.merge_losses(loss_class, loss_angle)
 
             self.scaler.scale(loss_train).backward()
@@ -659,6 +685,7 @@ class ImageNetTrainer:
                 for images, target in tqdm(self.val_loader):
                     if isinstance(images, tuple):
                         images = tuple(x[:target.shape[0]] for x in images)
+                        stored_angle_target = images[1]
                         target_angle = self.prep_angle_target(images[1], val_mode=True)
                         images = images[0]
 
@@ -685,16 +712,22 @@ class ImageNetTrainer:
                             for k in ['top_1_angle', 'top_5_angle']:
                                 self.val_meters[k](output_angle, target_angle)
                         elif angle_regress == 3:
-                            self.val_meters['mse_angle'](output_angle, target_angle)
+                            for i, n in enumerate(['sin', 'cos']):
+                                for k in ['top_1_', 'top_5_']:
+                                    self.val_meters[k+n](output_angle[i], target_angle[i])
+
                         else:
                             raise NotImplementedError
 
                         if not angle_regress == 0:
-                            dummy_target = ch.ones(target_angle.shape[0]).type(ch.int).to(self.gpu)
+                            if isinstance(target_angle, tuple):
+                                dummy_target = ch.ones(target_angle[0].shape[0]).type(ch.int).to(self.gpu)
+                            else:
+                                dummy_target = ch.ones(target_angle.shape[0]).type(ch.int).to(self.gpu)
                             angle_within = self.angle_within_binsize(output_angle, target_angle)
                             self.val_meters['top_1_within_binsize'](angle_within, dummy_target)
 
-                        loss_ang = self.angle_loss(output_angle, target_angle)
+                        loss_ang = self.compute_angle_loss(output_angle, target_angle)
                         self.val_meters['loss_angle'](loss_ang)
 
 
@@ -724,7 +757,10 @@ class ImageNetTrainer:
                 self.val_meters['top_1_angle'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
                 self.val_meters['top_5_angle'] = torchmetrics.Accuracy(compute_on_step=False, top_k=5).to(self.gpu)
             elif angle_regress == 3:
-                self.val_meters['mse_angle'] = torchmetrics.MeanSquaredError(compute_on_step=False).to(self.gpu)
+                self.val_meters['top_1_sin'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
+                self.val_meters['top_5_sin'] = torchmetrics.Accuracy(compute_on_step=False, top_k=5).to(self.gpu)
+                self.val_meters['top_1_cos'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
+                self.val_meters['top_5_cos'] = torchmetrics.Accuracy(compute_on_step=False, top_k=5).to(self.gpu)
             else:
                 raise NotImplementedError
 
