@@ -46,7 +46,7 @@ configs_dict["--training.load_from"] = ["mask_rotate"]
 configs_dict["--angleclassifier.freeze_base"] = [1]
 configs_dict["--lr.lr"] = [0.05]
 configs_dict["--angleclassifier.classifier"] = ['deep']
-configs_dict["--angleclassifier.angle_regress"] = [2, 3]
+configs_dict["--angleclassifier.angle_regress"] = [3]
 configs_dict["--angleclassifier.flatten"] = ['basic']
 configs_dict["--resolution.max_res"] = [160, 180, 210, 230, 256]
 

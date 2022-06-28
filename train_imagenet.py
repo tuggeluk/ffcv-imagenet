@@ -552,6 +552,7 @@ class ImageNetTrainer:
             pred_sin = self.bin_tresh[1, ch.argmax(output_angle[0], -1)]
             pred_cos = self.bin_tresh[1, ch.argmax(output_angle[1], -1)]
 
+
             sin_below_zero = pred_sin < 0
             angles = ch.acos(pred_cos)/np.pi*180
             angles[sin_below_zero] = 360 - angles[sin_below_zero]
