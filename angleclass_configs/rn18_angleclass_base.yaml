@@ -17,8 +17,8 @@ model:
   arch: resnet18
 resolution:
   end_ramp: 0
-  max_res: 192
-  min_res: 160
+  max_res: 256
+  min_res: 256
   start_ramp: 0
 training:
   batch_size: 512

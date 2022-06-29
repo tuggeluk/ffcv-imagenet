@@ -29,26 +29,20 @@ else:
 configs_dict["--data.num_workers"] = 12
 configs_dict["--data.in_memory"] = 1
 configs_dict["--logging.wandb_dryrun"] = 0
-configs_dict["--logging.wandb_project"] = "matching_input_res_training_angle_classifiers"
+configs_dict["--logging.wandb_project"] = "regress2_training_angle_classifiers"
 #configs_dict["--logging.wandb_run"] = ""
 
 
 #configs_dict["--training.load_from"] = ["mask_rotate", "_mask_norotate"]
-# configs_dict["--training.load_from"] = ["mask_rotate"]
-# configs_dict["--angleclassifier.freeze_base"] = [1]
-# configs_dict["--lr.lr"] = [0.05, 0.01, 0.005, 0.001]
-# configs_dict["--angleclassifier.classifier"] = ['deep', 'deepx2', 'deepslant']
-# configs_dict["--angleclassifier.angle_regress"] = [1, 2, 3]
-# configs_dict["--angleclassifier.flatten"] = ['basic', 'extended']
-
-
 configs_dict["--training.load_from"] = ["mask_rotate"]
 configs_dict["--angleclassifier.freeze_base"] = [1]
-configs_dict["--lr.lr"] = [0.05]
-configs_dict["--angleclassifier.classifier"] = ['deep']
-configs_dict["--angleclassifier.angle_regress"] = [3]
-configs_dict["--angleclassifier.flatten"] = ['basic']
-configs_dict["--resolution.max_res"] = [160, 180, 210, 230, 256]
+configs_dict["--lr.lr"] = [0.1, 0.05, 0.01]
+configs_dict["--angleclassifier.classifier"] = ['fc', 'deep', 'deepx2', 'deepslant']
+configs_dict["--angleclassifier.angle_regress"] = [2]
+configs_dict["--angleclassifier.flatten"] = ['basic', 'extended']
+
+
+
 
 
 configs_dict["--data.in_memory"] = 1
