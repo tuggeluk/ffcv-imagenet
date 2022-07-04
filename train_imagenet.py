@@ -119,7 +119,7 @@ Section('angleclassifier', 'distributed training options').params(
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
     angle_regress=Param(int,
         '0: uprightness classification, 1: angle regression, 2: angle regression via classification, 3: classify against sin+cos'
-                        , default=3),
+                        , default=2),
     angle_binsize=Param(int, 'angle width lumped into one class', default=4),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
     prio_angle=Param(float, 'should we use regression for the angle', default=1),
