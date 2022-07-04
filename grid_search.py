@@ -15,7 +15,7 @@ if on_dgx:
     #configs_dict["--logging.folder"] = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
     checkpoints_basedir = "logs/rn50_base_configs"
     logging_basedir = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
-    run_name_prefix = "debug_speed_"
+    run_name_prefix = "low_lr_rn50_"
 else:
     configs_dict["--config-file"] = "angleclass_configs/rn18_angleclass_base.yaml"
     configs_dict["--data.train_dataset"] = "/home/ubuntu/ImageNet_ffcv/train.ffcv"
@@ -36,7 +36,7 @@ configs_dict["--logging.wandb_project"] = "regress2_training_angle_classifiers"
 #configs_dict["--training.load_from"] = ["mask_rotate", "_mask_norotate"]
 configs_dict["--training.load_from"] = ["mask_rotate"]
 configs_dict["--angleclassifier.freeze_base"] = [1]
-configs_dict["--lr.lr"] = [0.1]
+configs_dict["--lr.lr"] = [0.5, 0.1]
 configs_dict["--angleclassifier.classifier"] = ['deep', 'deepx2', 'deepslant']
 configs_dict["--angleclassifier.angle_regress"] = [2]
 configs_dict["--angleclassifier.flatten"] = ['basic']
@@ -46,7 +46,7 @@ configs_dict["--angleclassifier.flatten"] = ['basic']
 
 
 configs_dict["--data.in_memory"] = 1
-configs_dict["--training.epochs"] = 1
+#configs_dict["--training.epochs"] = 1
 
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):
