@@ -14,7 +14,7 @@ lr:
   lr: 0.01
   lr_schedule_type: cyclic
 model:
-  arch: resnet50
+  arch: resnet18
 resolution:
   end_ramp: 0
   max_res: 256
