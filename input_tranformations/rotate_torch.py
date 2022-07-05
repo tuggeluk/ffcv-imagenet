@@ -29,11 +29,12 @@ class RandomRotate_Torch(Operation):
     module: torch.nn.Module
         The module for transformation
     """
-    def __init__(self, block_rotate: bool = False, p_flip_upright = 0):
+    def __init__(self, block_rotate: bool = False, p_flip_upright = 0, double_rotate = False):
         super().__init__()
         self.block_rotate = block_rotate
         self.angle_config = -1
         self.p_flip_upright = p_flip_upright
+        self.double_rotate = double_rotate
 
     def set_angle_config(self, angle_config: int = -1, p_flip_upright = 0):
         self.angle_config = angle_config
@@ -87,8 +88,18 @@ class RandomRotate_Torch(Operation):
             else:
                 angle = np.ones(images.shape[0]) * self.angle_config
 
-            for i in parallel_range(len(indices)):
-                images[i] = rotate(images[i], int(angle[i]))
+            if self.double_rotate:
+                pre_angle = np.random.randint(0, 360, size=images.shape[0])
+                for i in parallel_range(len(indices)):
+                    images[i] = rotate(images[i], int(pre_angle[i]))
+                angle_offset = angle-pre_angle
+                angle_offset[angle_offset < 0] += 360
+                for i in parallel_range(len(indices)):
+                    images[i] = rotate(images[i], int(angle_offset[i]))
+
+            else:
+                for i in parallel_range(len(indices)):
+                    images[i] = rotate(images[i], int(angle[i]))
 
             # print("print")
             # from PIL import Image

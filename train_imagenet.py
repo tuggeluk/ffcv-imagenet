@@ -124,6 +124,7 @@ Section('angleclassifier', 'distributed training options').params(
     prio_class=Param(float, 'should we use regression for the angle', default=1),
     prio_angle=Param(float, 'should we use regression for the angle', default=1),
     flatten=Param(And(str, OneOf(['basic', 'extended'])), 'flatten with avg pool (1,1) or (5,5)', default='basic'),
+    double_rotate=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
 )
 
 Section('angle_testmode', 'configure how testing performed').params(
@@ -278,8 +279,9 @@ class ImageNetTrainer:
     @param('training.random_rotate')
     @param('training.block_rotate')
     @param('training.p_flip_upright')
+    @param('angleclassifier.double_rotate')
     def create_train_loader(self, train_dataset, num_workers, batch_size,
-                            distributed, in_memory, corner_mask, random_rotate, block_rotate, p_flip_upright):
+                            distributed, in_memory, corner_mask, random_rotate, block_rotate, p_flip_upright, double_rotate):
         this_device = f'cuda:{self.gpu}'
         train_path = Path(train_dataset)
         assert train_path.is_file()
@@ -299,7 +301,7 @@ class ImageNetTrainer:
         #     image_pipeline.insert(3, RandomRotate_Torch(block_rotate))
 
         if random_rotate:
-            image_pipeline.append(RandomRotate_Torch(block_rotate, p_flip_upright))
+            image_pipeline.append(RandomRotate_Torch(block_rotate, p_flip_upright, double_rotate))
 
         if corner_mask:
             image_pipeline.insert(1, MaskCorners())
@@ -335,8 +337,9 @@ class ImageNetTrainer:
     @param('validation.random_rotate')
     @param('training.block_rotate')
     @param('validation.p_flip_upright')
+    @param('angleclassifier.double_rotate')
     def create_val_loader(self, val_dataset, num_workers, batch_size,
-                          resolution, distributed, corner_mask, random_rotate, block_rotate, p_flip_upright):
+                          resolution, distributed, corner_mask, random_rotate, block_rotate, p_flip_upright, double_rotate):
         this_device = f'cuda:{self.gpu}'
         val_path = Path(val_dataset)
         assert val_path.is_file()
@@ -351,7 +354,7 @@ class ImageNetTrainer:
         ]
 
         if random_rotate:
-            image_pipeline.append(RandomRotate_Torch(block_rotate, p_flip_upright))
+            image_pipeline.append(RandomRotate_Torch(block_rotate, p_flip_upright, double_rotate))
 
         if corner_mask:
             image_pipeline.insert(1, MaskCorners())
