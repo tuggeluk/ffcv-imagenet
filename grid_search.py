@@ -36,9 +36,9 @@ configs_dict["--logging.wandb_project"] = "double_rotate_training_angle_classifi
 #configs_dict["--training.load_from"] = ["mask_rotate", "_mask_norotate"]
 configs_dict["--training.load_from"] = ["mask_rotate"]
 configs_dict["--angleclassifier.freeze_base"] = 1
-configs_dict["--lr.lr"] = [0.5, 0.1]
+configs_dict["--lr.lr"] = [0.5]
 configs_dict["--angleclassifier.classifier"] = 'deep'
-configs_dict["--angleclassifier.angle_regress"] = [0, 2]
+configs_dict["--angleclassifier.angle_regress"] = [2]
 configs_dict["--angleclassifier.flatten"] = 'basic'
 configs_dict["--angleclassifier.double_rotate"] = 1
 
