@@ -55,12 +55,8 @@ class RandomRotate_Torch(Operation):
             else:
                 angle = self.angle_config
 
-
             images = rotate(images, angle)
 
-            # print("print")
-            # from PIL import Image
-            # Image.fromarray(np.array(images.permute(0, 2, 3, 1)[2].cpu())).show()
             images = images.permute(0, 2, 3, 1)
             images = images.contiguous()
             return images
@@ -74,12 +70,6 @@ class RandomRotate_Torch(Operation):
         def random_rotate_tensor(images, _, indices):
             images = images.permute(0, 3, 1, 2)
 
-            # _,_,h,w = images.shape
-            # h, w = int(h/2), int(w/2)
-            # images[:, :, h - 10:h, w - 10:w] = 0
-            # images[:, :, h - 10:h, w : w + 10] = 125
-            # images[:, :, h:h+10, w: w + 10] = 255
-            # images[:, :, h:h + 10, w-10: w] = 125
             if self.angle_config < 0:
                 angle = np.random.randint(0, 360, size=images.shape[0])
                 if self.p_flip_upright > 0:
@@ -101,10 +91,6 @@ class RandomRotate_Torch(Operation):
                 for i in parallel_range(len(indices)):
                     images[i] = rotate(images[i], int(angle[i]))
 
-            # print("print")
-            # from PIL import Image
-            # Image.fromarray(np.array(images[1].permute(1, 2, 0).cpu())).show()
-            #Image.fromarray(rotate(images[1], int(angle[1])).permute(1,2,0).cpu()).show()
             images = images.permute(0, 2, 3, 1)
             out_tensor = ch.Tensor(angle).type(ch.int32)
             out_tensor = out_tensor.to(images.device)

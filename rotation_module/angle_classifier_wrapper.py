@@ -13,10 +13,11 @@ class AngleClassifierWrapper(ch.nn.Module):
     module: torch.nn.Module
         The module for transformation
     """
-    def __init__(self, base_model, angle_class):
+    def __init__(self, base_model, upright_class, ang_class):
         super().__init__()
         self.base_model = base_model
-        self.angle_class = angle_class
+        self.up_class = upright_class
+        self.ang_class = ang_class
 
     def freeze_base(self) -> None:
         for param in self.base_model.parameters():
@@ -30,15 +31,26 @@ class AngleClassifierWrapper(ch.nn.Module):
 
     def forward(self, x: Tensor) -> (Tensor, Tensor):
 
-        extracted_tensors = dict()
+        extracted_up_tensors = dict()
+        extracted_ang_tensors = dict()
         for name, mod in self.base_model._modules.items():
             if name == 'fc':
                 x = ch.flatten(x, 1)
             x = mod(x)
-            if name in self.angle_class.extract_list:
-                extracted_tensors[name] = x
+
+            if self.up_class is not None:
+               if name in self.up_class.extract_list:
+                    extracted_up_tensors[name] = x
+
+            if self.ang_class is not None:
+                if name in self.ang_class.extract_list:
+                    extracted_ang_tensors[name] = x
 
         out = x
-        out_ang = self.angle_class(extracted_tensors)
+        up_ang = out_ang = None
+        if self.up_class is not None:
+            up_ang = self.up_class(extracted_up_tensors)
+        if self.ang_class is not None:
+            out_ang = self.ang_class(extracted_ang_tensors)
 
-        return out, out_ang
+        return out, up_ang, out_ang
