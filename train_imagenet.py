@@ -121,14 +121,15 @@ Section('angleclassifier', 'distributed training options').params(
 
     loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=1),
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
-    angle_binsize=Param(int, 'angle width lumped into one class', default=4),
+    angle_binsize=Param(list, 'angle width lumped into one class', default=[1, 12, 45, 90, 180]),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
     prio_angle=Param(float, 'should we use regression for the angle', default=1),
     flatten=Param(And(str, OneOf(['basic', 'extended'])), 'flatten with avg pool (1,1) or (5,5)', default='basic'),
 )
 
 Section('angle_testmode', 'configure how testing performed').params(
-    enabled=Param(int, 'should angle-correction be done during testing', default=0),
+    standard=Param(int, 'individually evaluate class/upright/angle predictions', default=1),
+    angle_corr=Param(int, 'evaluate angle corrected class prediction', default=0),
     double_rotate=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
 )
 
@@ -438,8 +439,10 @@ class ImageNetTrainer:
     @param('angleclassifier.attach_ang_classifier')
     @param('angleclassifier.classifier_upright')
     @param('angleclassifier.classifier_ang')
+    @param('angleclassifier.angle_binsize')
     def create_model_and_scaler(self, arch, pretrained, distributed, use_blurpool, load_from, freeze_base, loss_scope,
-                                flatten, attach_upright_classifier, attach_ang_classifier, classifier_upright, classifier_ang):
+                                flatten, attach_upright_classifier, attach_ang_classifier, classifier_upright,
+                                classifier_ang, angle_binsize):
         scaler = GradScaler()
         model = getattr(models, arch)(pretrained=pretrained)
         def apply_blurpool(mod: ch.nn.Module):
@@ -455,7 +458,7 @@ class ImageNetTrainer:
             model.fc = ch.nn.Identity()
 
         if attach_upright_classifier:
-            upright_class = self.create_classifier(classifier_upright, 2, flatten, model)
+            upright_class = self.create_classifier(classifier_upright, [2]*len(angle_binsize), flatten, model)
         else:
             upright_class = None
 
@@ -641,7 +644,9 @@ class ImageNetTrainer:
     @param('angleclassifier.loss_scope')
     @param('angleclassifier.attach_upright_classifier')
     @param('angleclassifier.attach_ang_classifier')
-    def val_loop(self, loss_scope, attach_upright_classifier, attach_ang_classifier):
+    @param('angle_testmode.standard')
+    @param('angle_testmode.angle_corr')
+    def val_loop(self, loss_scope, attach_upright_classifier, attach_ang_classifier, standard, angle_corr):
         model = self.model
         model.eval()
 
@@ -657,29 +662,35 @@ class ImageNetTrainer:
 
                         images = images[0]
 
-                    output_cls, output_up, output_ang = self.model(images)
+                    if standard:
+                        output_cls, output_up, output_ang = self.model(images)
+                        if loss_scope == 0 or loss_scope == 2:
+                            for k in ['top_1_class', 'top_5_class']:
+                                self.val_meters[k](output_cls, target)
 
-                    if loss_scope == 0 or loss_scope == 2:
-                        for k in ['top_1_class', 'top_5_class']:
-                            self.val_meters[k](output_cls, target)
+                            loss_val = self.loss(output_cls, target)
+                            self.val_meters['loss_class'](loss_val)
 
-                        loss_val = self.loss(output_cls, target)
-                        self.val_meters['loss_class'](loss_val)
+                        if loss_scope == 1 or loss_scope == 2:
+                            if attach_upright_classifier:
+                                self.val_meters['top_1_angle_upright'](output_up, target_up)
 
-                    if loss_scope == 1 or loss_scope == 2:
-                        if attach_upright_classifier:
-                            self.val_meters['top_1_angle_upright'](output_up, target_up)
+                            if attach_ang_classifier:
+                                for k in ['top_1_angle', 'top_5_angle']:
+                                    self.val_meters[k](output_ang, target_ang)
 
-                        if attach_ang_classifier:
-                            for k in ['top_1_angle', 'top_5_angle']:
-                                self.val_meters[k](output_ang, target_ang)
+                                dummy_target = ch.ones(target_ang.shape[0]).type(ch.int).to(self.gpu)
+                                angle_within = self.angle_within_binsize(output_ang, target_ang)
+                                self.val_meters['top_1_within_binsize'](angle_within, dummy_target)
 
-                            dummy_target = ch.ones(target_ang.shape[0]).type(ch.int).to(self.gpu)
-                            angle_within = self.angle_within_binsize(output_ang, target_ang)
-                            self.val_meters['top_1_within_binsize'](angle_within, dummy_target)
+                            loss_ang = self.compute_angle_loss(output_up, output_ang, target_up, target_ang)
+                            self.val_meters['loss_angle'](loss_ang)
 
-                        loss_ang = self.compute_angle_loss(output_up, output_ang, target_up, target_ang)
-                        self.val_meters['loss_angle'](loss_ang)
+                    if angle_corr:
+                        not_done = True
+                        while not_done:
+                            raise NotImplementedError
+
 
         stats = {k: m.compute().item() for k, m in self.val_meters.items()}
         [meter.reset() for meter in self.val_meters.values()]
