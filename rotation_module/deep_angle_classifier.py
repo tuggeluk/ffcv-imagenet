@@ -44,7 +44,7 @@ class DeepAngleClassifier(BaseAngleClassifier):
         if flatten == 'basic':
             self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
             if isinstance(out_channels, list):
-                self.fcs = list()
+                self.fcs = nn.ModuleList()
                 for out_chan in out_channels:
                     self.fcs.append(ch.nn.Linear(depths[-1], out_chan))
                 self.multi_out = True
@@ -54,7 +54,7 @@ class DeepAngleClassifier(BaseAngleClassifier):
         elif flatten == 'extended':
             self.avgpool = nn.AdaptiveAvgPool2d((5, 5))
             if isinstance(out_channels, list):
-                self.fcs = list()
+                self.fcs =  nn.ModuleList()
                 for out_chan in out_channels:
                     self.fcs.append(ch.nn.Linear(depths[-1], out_chan))
                 self.multi_out = True

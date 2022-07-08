@@ -25,7 +25,7 @@ from argparse import ArgumentParser
 from fastargs import get_current_config
 from fastargs.decorators import param
 from fastargs import Param, Section
-from fastargs.validation import And, OneOf
+from fastargs.validation import And, OneOf, Checker
 
 from ffcv.pipeline.operation import Operation
 from ffcv.loader import Loader, OrderOption
@@ -42,6 +42,25 @@ from rotation_module.angle_classifier_wrapper import AngleClassifierWrapper
 from rotation_module.fc_angle_classifier import FcAngleClassifier
 from rotation_module.fc2_angle_classifier import Fc2AngleClassifier
 from rotation_module.deep_angle_classifier import DeepAngleClassifier
+
+class Fastargs_List(Checker):
+    def __init__(self, cast_to = str):
+        self.cast_to = cast_to
+
+    def check(self, value):
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            value = value.split(",")
+            value = [self.cast_to(x.strip()) for x in value]
+            return value
+        wrap_list = list()
+        wrap_list.append(value)
+        return wrap_list
+
+    def help(self):
+        return "a list"
+
 
 Section('model', 'model details').params(
     arch=Param(And(str, OneOf(models.__dir__())), default='resnet18'),
@@ -121,7 +140,7 @@ Section('angleclassifier', 'distributed training options').params(
 
     loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=1),
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
-    angle_binsize=Param(list, 'angle width lumped into one class', default=[1, 12, 45, 90, 180]),
+    angle_binsize=Param(Fastargs_List(), 'angle width lumped into one class', default=[1, 12, 45, 90, 180]),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
     prio_angle=Param(float, 'should we use regression for the angle', default=1),
     flatten=Param(And(str, OneOf(['basic', 'extended'])), 'flatten with avg pool (1,1) or (5,5)', default='basic'),
@@ -322,7 +341,7 @@ class ImageNetTrainer:
     @param('validation.random_rotate')
     @param('training.block_rotate')
     @param('validation.p_flip_upright')
-    @param('angleclassifier.double_rotate')
+    @param('angle_testmode.double_rotate')
     def create_val_loader(self, val_dataset, num_workers, batch_size,
                           resolution, distributed, corner_mask, random_rotate, block_rotate, p_flip_upright, double_rotate):
         this_device = f'cuda:{self.gpu}'
@@ -495,9 +514,12 @@ class ImageNetTrainer:
 
     @param('angleclassifier.angle_binsize')
     def bin_angles(self, angles, angle_binsize):
-        offset = int(angle_binsize / 2)
-        angle_class = ((angles < offset) + (angles-360 > -offset))*1
-        return angle_class
+        angle_classes = list()
+        for b_size in angle_binsize:
+            offset = int(b_size / 2)
+            angle_class = ((angles <= offset) + (angles-360 >= -offset))*1
+            angle_classes.append(angle_class)
+        return angle_classes
 
     def bin_sin_cos(self, values):
         binned = ch.sum(ch.unsqueeze(values, -1) < self.bin_tresh[:values.shape[0]], -1)
@@ -544,11 +566,13 @@ class ImageNetTrainer:
 
     @param('angleclassifier.attach_upright_classifier')
     @param('angleclassifier.attach_ang_classifier')
+    @param('angleclassifier.angle_binsize')
     def compute_angle_loss(self, output_up, output_ang, target_up, target_ang, attach_upright_classifier,
-                           attach_ang_classifier):
+                           attach_ang_classifier, angle_binsize):
         tot_loss = 0
         if attach_upright_classifier:
-            tot_loss += self.loss(output_up, target_up)
+            for i in range(len(angle_binsize)):
+                tot_loss += self.loss(output_up[i], target_up[i])
 
         if attach_ang_classifier:
             tot_loss += self.loss(output_ang, target_ang)
@@ -646,7 +670,8 @@ class ImageNetTrainer:
     @param('angleclassifier.attach_ang_classifier')
     @param('angle_testmode.standard')
     @param('angle_testmode.angle_corr')
-    def val_loop(self, loss_scope, attach_upright_classifier, attach_ang_classifier, standard, angle_corr):
+    @param('angleclassifier.angle_binsize')
+    def val_loop(self, loss_scope, attach_upright_classifier, attach_ang_classifier, standard, angle_corr, angle_binsize):
         model = self.model
         model.eval()
 
@@ -656,9 +681,9 @@ class ImageNetTrainer:
                     if isinstance(images, tuple):
                         images = tuple(x[:target.shape[0]] for x in images)
                         if attach_upright_classifier:
-                            target_up = self.prep_angle_target(images[1], up_class=True)
+                            target_up = self.prep_angle_target(images[1], up_class=True, val_mode=True)
                         if attach_ang_classifier:
-                            target_ang = self.prep_angle_target(images[1], up_class=False)
+                            target_ang = self.prep_angle_target(images[1], up_class=False, val_mode=True)
 
                         images = images[0]
 
@@ -673,15 +698,16 @@ class ImageNetTrainer:
 
                         if loss_scope == 1 or loss_scope == 2:
                             if attach_upright_classifier:
-                                self.val_meters['top_1_angle_upright'](output_up, target_up)
+                                for i_bsize, b_size in enumerate(angle_binsize):
+                                    self.val_meters['top_1_angle_upright_' + str(b_size) + "_binsize"](output_up[i_bsize], target_up[i_bsize])
 
                             if attach_ang_classifier:
                                 for k in ['top_1_angle', 'top_5_angle']:
                                     self.val_meters[k](output_ang, target_ang)
 
-                                dummy_target = ch.ones(target_ang.shape[0]).type(ch.int).to(self.gpu)
-                                angle_within = self.angle_within_binsize(output_ang, target_ang)
-                                self.val_meters['top_1_within_binsize'](angle_within, dummy_target)
+                                # dummy_target = ch.ones(target_ang.shape[0]).type(ch.int).to(self.gpu)
+                                # angle_within = self.angle_within_binsize(output_ang, target_ang)
+                                # self.val_meters['top_1_within_binsize'](angle_within, dummy_target)
 
                             loss_ang = self.compute_angle_loss(output_up, output_ang, target_up, target_ang)
                             self.val_meters['loss_angle'](loss_ang)
@@ -703,8 +729,9 @@ class ImageNetTrainer:
     @param('angleclassifier.loss_scope')
     @param('angleclassifier.attach_upright_classifier')
     @param('angleclassifier.attach_ang_classifier')
+    @param('angleclassifier.angle_binsize')
     def initialize_logger(self, folder, wandb_dryrun, wandb_project, wandb_run, loss_scope, attach_upright_classifier,
-                          attach_ang_classifier):
+                          attach_ang_classifier, angle_binsize):
         self.val_meters = {}
 
         if loss_scope == 0 or loss_scope == 2:
@@ -713,13 +740,14 @@ class ImageNetTrainer:
             self.val_meters['loss_class'] = MeanScalarMetric(compute_on_step=False).to(self.gpu)
         if loss_scope == 1 or loss_scope == 2:
             if attach_upright_classifier:
-                self.val_meters['top_1_angle_upright'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
+                for b_size in angle_binsize:
+                    self.val_meters['top_1_angle_upright_'+str(b_size)+"_binsize"] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
 
-            elif attach_ang_classifier:
+            if attach_ang_classifier:
                 self.val_meters['top_1_angle'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
                 self.val_meters['top_5_angle'] = torchmetrics.Accuracy(compute_on_step=False, top_k=5).to(self.gpu)
 
-                self.val_meters['top_1_within_binsize'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
+                # self.val_meters['top_1_within_binsize'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
 
             self.val_meters['loss_angle'] = MeanScalarMetric(compute_on_step=False).to(self.gpu)
 

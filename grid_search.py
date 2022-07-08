@@ -29,18 +29,22 @@ else:
 configs_dict["--data.num_workers"] = 12
 configs_dict["--data.in_memory"] = 1
 configs_dict["--logging.wandb_dryrun"] = 0
-configs_dict["--logging.wandb_project"] = "double_rotate_training_angle_classifiers"
+configs_dict["--logging.wandb_project"] = "rewrite_multi_binsize_up_class"
 #configs_dict["--logging.wandb_run"] = ""
 
 
 #configs_dict["--training.load_from"] = ["mask_rotate", "_mask_norotate"]
 configs_dict["--training.load_from"] = ["mask_rotate"]
 configs_dict["--angleclassifier.freeze_base"] = 1
-configs_dict["--lr.lr"] = [0.5]
-configs_dict["--angleclassifier.classifier"] = 'deep'
-configs_dict["--angleclassifier.angle_regress"] = [2]
+configs_dict["--lr.lr"] = 0.5
+
+configs_dict["--angleclassifier.attach_upright_classifier"] = [1]
+configs_dict["--angleclassifier.attach_ang_classifier"] = [1]
+configs_dict["--angleclassifier.classifier_upright"] = 'deep'
+configs_dict["--angleclassifier.classifier_ang"] = 'deep'
+
 configs_dict["--angleclassifier.flatten"] = 'basic'
-configs_dict["--angleclassifier.double_rotate"] = 1
+configs_dict["--angle_testmode.double_rotate"] = 0
 
 
 

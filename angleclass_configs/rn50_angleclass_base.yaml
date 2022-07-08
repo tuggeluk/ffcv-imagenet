@@ -24,7 +24,7 @@ training:
   batch_size: 512
   bn_wd: 0
   distributed: 1
-  epochs: 16
+  epochs: 20
   label_smoothing: 0.1
   momentum: 0.9
   optimizer: sgd
@@ -40,7 +40,5 @@ validation:
   corner_mask: 1
   random_rotate: 1
   p_flip_upright: 0
-angleclassifier:
-  attach_classifier: 1
-  loss_scope: 1
+
 
