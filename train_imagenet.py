@@ -680,6 +680,7 @@ class ImageNetTrainer:
                 for images, target in tqdm(self.val_loader):
                     if isinstance(images, tuple):
                         images = tuple(x[:target.shape[0]] for x in images)
+                        target_up = target_ang = None
                         if attach_upright_classifier:
                             target_up = self.prep_angle_target(images[1], up_class=True, val_mode=True)
                         if attach_ang_classifier:
