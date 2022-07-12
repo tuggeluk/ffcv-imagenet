@@ -148,7 +148,8 @@ Section('angleclassifier', 'distributed training options').params(
 
 Section('angle_testmode', 'configure how testing performed').params(
     standard=Param(int, 'individually evaluate class/upright/angle predictions', default=1),
-    angle_corr=Param(int, 'evaluate angle corrected class prediction', default=0),
+    corr_up=Param(int, 'evaluate angle corrected class prediction', default=1),
+    corr_pred=Param(int, 'evaluate angle corrected class prediction', default=1),
     double_rotate=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
 )
 
@@ -202,6 +203,7 @@ class ImageNetTrainer:
         self.train_loader = self.create_train_loader()
         self.val_loader = self.create_val_loader()
         self.model, self.scaler = self.create_model_and_scaler()
+        print(self.model)
         self.create_optimizer()
         self.initialize_logger()
         
@@ -451,6 +453,7 @@ class ImageNetTrainer:
     @param('training.distributed')
     @param('training.use_blurpool')
     @param('training.load_from')
+    @param('training.eval_only')
     @param('angleclassifier.freeze_base')
     @param('angleclassifier.loss_scope')
     @param('angleclassifier.flatten')
@@ -459,8 +462,8 @@ class ImageNetTrainer:
     @param('angleclassifier.classifier_upright')
     @param('angleclassifier.classifier_ang')
     @param('angleclassifier.angle_binsize')
-    def create_model_and_scaler(self, arch, pretrained, distributed, use_blurpool, load_from, freeze_base, loss_scope,
-                                flatten, attach_upright_classifier, attach_ang_classifier, classifier_upright,
+    def create_model_and_scaler(self, arch, pretrained, distributed, use_blurpool, load_from, eval_only, freeze_base,
+                                loss_scope, flatten, attach_upright_classifier, attach_ang_classifier, classifier_upright,
                                 classifier_ang, angle_binsize):
         scaler = GradScaler()
         model = getattr(models, arch)(pretrained=pretrained)
@@ -472,7 +475,7 @@ class ImageNetTrainer:
         if use_blurpool: apply_blurpool(model)
 
         model = model.to(memory_format=ch.channels_last)
-        if loss_scope == 1:
+        if loss_scope == 1 and not eval_only:
             # delete img classifier
             model.fc = ch.nn.Identity()
 
@@ -499,7 +502,7 @@ class ImageNetTrainer:
                     kn = "base_model."+kn
                 state_dict_renamed[kn] = state_dict[k]
 
-            model.load_state_dict(state_dict_renamed, strict=False)
+            model.load_state_dict(state_dict_renamed, strict=True)
 
         if freeze_base:
             model.freeze_base()
@@ -668,10 +671,12 @@ class ImageNetTrainer:
     @param('angleclassifier.loss_scope')
     @param('angleclassifier.attach_upright_classifier')
     @param('angleclassifier.attach_ang_classifier')
-    @param('angle_testmode.standard')
-    @param('angle_testmode.angle_corr')
     @param('angleclassifier.angle_binsize')
-    def val_loop(self, loss_scope, attach_upright_classifier, attach_ang_classifier, standard, angle_corr, angle_binsize):
+    @param('angle_testmode.standard')
+    @param('angle_testmode.corr_up')
+    @param('angle_testmode.corr_pred')
+    def val_loop(self, loss_scope, attach_upright_classifier, attach_ang_classifier, angle_binsize, standard, corr_up,
+                 corr_pred):
         model = self.model
         model.eval()
 
@@ -713,10 +718,19 @@ class ImageNetTrainer:
                             loss_ang = self.compute_angle_loss(output_up, output_ang, target_up, target_ang)
                             self.val_meters['loss_angle'](loss_ang)
 
-                    if angle_corr:
-                        not_done = True
-                        while not_done:
-                            raise NotImplementedError
+                    if corr_up:
+                        assert attach_upright_classifier
+
+                        output_cls_corr_up = output_cls
+                        for k in ['top_1_class_corr_up', 'top_5_class_corr_up']:
+                            self.val_meters[k](output_cls_corr_up, target)
+
+                    if corr_pred:
+                        assert attach_ang_classifier
+
+                        output_cls_corr_pred = output_cls
+                        for k in ['top_1_class_corr_pred', 'top_5_class_corr_pred']:
+                            self.val_meters[k](output_cls_corr_pred, target)
 
 
         stats = {k: m.compute().item() for k, m in self.val_meters.items()}
@@ -731,8 +745,10 @@ class ImageNetTrainer:
     @param('angleclassifier.attach_upright_classifier')
     @param('angleclassifier.attach_ang_classifier')
     @param('angleclassifier.angle_binsize')
+    @param('angle_testmode.corr_up')
+    @param('angle_testmode.corr_pred')
     def initialize_logger(self, folder, wandb_dryrun, wandb_project, wandb_run, loss_scope, attach_upright_classifier,
-                          attach_ang_classifier, angle_binsize):
+                          attach_ang_classifier, angle_binsize, corr_up, corr_pred):
         self.val_meters = {}
 
         if loss_scope == 0 or loss_scope == 2:
@@ -751,6 +767,15 @@ class ImageNetTrainer:
                 # self.val_meters['top_1_within_binsize'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
 
             self.val_meters['loss_angle'] = MeanScalarMetric(compute_on_step=False).to(self.gpu)
+
+        if corr_up:
+            self.val_meters['top_1_class_corr_up'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
+            self.val_meters['top_5_class_corr_up'] = torchmetrics.Accuracy(compute_on_step=False, top_k=5).to(self.gpu)
+
+        if corr_pred:
+            self.val_meters['top_1_class_corr_pred'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
+            self.val_meters['top_5_class_corr_pred'] = torchmetrics.Accuracy(compute_on_step=False, top_k=5).to(self.gpu)
+
 
         if self.gpu == 0:
             #folder = (Path(folder) / str(self.uid)).absolute()
