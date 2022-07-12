@@ -116,7 +116,7 @@ Section('training', 'training hyper param stuff').params(
     epochs=Param(int, 'number of epochs', default=30),
     label_smoothing=Param(float, 'label smoothing parameter', default=0.1),
     distributed=Param(int, 'is distributed?', default=0),
-    use_blurpool=Param(int, 'use blurpool?', default=0),
+    use_blurpool=Param(int, 'use blurpool?', default=1),
     corner_mask=Param(int, 'should mask corners at train time', default=0),
     random_rotate=Param(int, 'should random rotate at train time', default=0),
     checkpoint_interval=Param(int, 'interval of saved checkpoints', default=-1),
@@ -203,7 +203,8 @@ class ImageNetTrainer:
         self.train_loader = self.create_train_loader()
         self.val_loader = self.create_val_loader()
         self.model, self.scaler = self.create_model_and_scaler()
-        print(self.model)
+        # if self.gpu == 0:
+        #     print(self.model)
         self.create_optimizer()
         self.initialize_logger()
         
@@ -475,9 +476,9 @@ class ImageNetTrainer:
         if use_blurpool: apply_blurpool(model)
 
         model = model.to(memory_format=ch.channels_last)
-        if loss_scope == 1 and not eval_only:
-            # delete img classifier
-            model.fc = ch.nn.Identity()
+        # if loss_scope == 1 and not eval_only:
+        #     # delete img classifier
+        #     model.fc = ch.nn.Identity()
 
         if attach_upright_classifier:
             upright_class = self.create_classifier(classifier_upright, [2]*len(angle_binsize), flatten, model)
@@ -498,16 +499,17 @@ class ImageNetTrainer:
             for k, v in state_dict.items():
                 #rename keys
                 kn = k[7:]
-                if ((not "up_class" in k) or (not "ang_class" in k)) and (not "base_model" in k):
+                if ((not "up_class" in k) and (not "ang_class" in k)) and (not "base_model" in k):
                     kn = "base_model."+kn
                 state_dict_renamed[kn] = state_dict[k]
 
             missing, unexpected = model.load_state_dict(state_dict_renamed, strict=False)
-            print(" ---------- weights loaded ----------")
-            print(" ---------- missing   keys ----------")
-            print(missing)
-            print(" ---------- unexptected keys ----------")
-            print(unexpected)
+            if self.gpu == 0:
+                print(" ---------- weights loaded ----------")
+                print(" ---------- missing   keys ----------")
+                print(missing)
+                print(" ---------- unexptected keys ----------")
+                print(unexpected)
 
         if freeze_base:
             model.freeze_base()
