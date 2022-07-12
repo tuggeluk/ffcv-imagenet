@@ -502,7 +502,12 @@ class ImageNetTrainer:
                     kn = "base_model."+kn
                 state_dict_renamed[kn] = state_dict[k]
 
-            model.load_state_dict(state_dict_renamed, strict=True)
+            missing, unexpected = model.load_state_dict(state_dict_renamed, strict=False)
+            print(" ---------- weights loaded ----------")
+            print(" ---------- missing   keys ----------")
+            print(missing)
+            print(" ---------- unexptected keys ----------")
+            print(unexpected)
 
         if freeze_base:
             model.freeze_base()
