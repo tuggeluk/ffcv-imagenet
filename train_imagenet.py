@@ -635,7 +635,7 @@ class ImageNetTrainer:
                     loss_angle = self.compute_angle_loss(output_up, output_ang, target_up, target_ang)
                     loss_train = self.merge_losses(loss_class, loss_angle)
 
-            print("loss-cls:" + str(self.loss(output_cls, target)))
+            #print("loss-cls:" + str(self.loss(output_cls, target)))
             self.scaler.scale(loss_train).backward()
             self.scaler.step(self.optimizer)
             self.scaler.update()
@@ -714,7 +714,7 @@ class ImageNetTrainer:
                             loss_val = self.loss(output_cls, target)
                             self.val_meters['loss_class'](loss_val)
 
-                        print("val loss clss: " + str(self.loss(output_cls, target)))
+                        #print("val loss clss: " + str(self.loss(output_cls, target)))
 
                         if loss_scope == 1 or loss_scope == 2:
                             if attach_upright_classifier:

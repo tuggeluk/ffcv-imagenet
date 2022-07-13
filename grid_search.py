@@ -29,7 +29,7 @@ else:
 configs_dict["--data.num_workers"] = 12
 configs_dict["--data.in_memory"] = 1
 configs_dict["--logging.wandb_dryrun"] = 0
-configs_dict["--logging.wandb_project"] = "rewrite_multi_binsize_up_class"
+configs_dict["--logging.wandb_project"] = "train_anglclass_fixed_pipeline"
 #configs_dict["--logging.wandb_run"] = ""
 
 
