@@ -78,6 +78,11 @@ class RandomRotate_Torch(Operation):
             else:
                 angle = np.ones(images.shape[0]) * self.angle_config
 
+            # print("print")
+            # from PIL import Image
+            # Image.fromarray(np.array(images[1].permute(1, 2, 0).cpu())).show()
+            # Image.fromarray(np.array(rotate(images[1], 90).permute(1, 2, 0).cpu())).show()
+
             if self.double_rotate:
                 pre_angle = np.random.randint(0, 360, size=images.shape[0])
                 for i in parallel_range(len(indices)):
@@ -90,6 +95,8 @@ class RandomRotate_Torch(Operation):
             else:
                 for i in parallel_range(len(indices)):
                     images[i] = rotate(images[i], int(angle[i]))
+
+
 
             images = images.permute(0, 2, 3, 1)
             out_tensor = ch.Tensor(angle).type(ch.int32)

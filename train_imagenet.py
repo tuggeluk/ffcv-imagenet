@@ -29,14 +29,14 @@ from fastargs.validation import And, OneOf, Checker
 
 from ffcv.pipeline.operation import Operation
 from ffcv.loader import Loader, OrderOption
-from ffcv.transforms import ToTensor, ToDevice, Squeeze, NormalizeImage, \
-    RandomHorizontalFlip, ToTorchImage
+from ffcv.transforms import ToTensor, ToDevice, Squeeze
 from ffcv.fields.rgb_image import CenterCropRGBImageDecoder, \
     RandomResizedCropRGBImageDecoder
 from ffcv.fields.basics import IntDecoder
 from input_tranformations.mask_corners import MaskCorners
 from input_tranformations.rotate import RandomRotate
 from input_tranformations.rotate_torch import RandomRotate_Torch
+from input_tranformations.own_ops import NormalizeImage, ToTorchImage
 import wandb
 from rotation_module.angle_classifier_wrapper import AngleClassifierWrapper
 from rotation_module.fc_angle_classifier import FcAngleClassifier
@@ -361,7 +361,7 @@ class ImageNetTrainer:
         ]
 
         if random_rotate:
-            image_pipeline.append(RandomRotate_Torch(block_rotate, p_flip_upright, double_rotate))
+            image_pipeline.insert(3, RandomRotate_Torch(block_rotate, p_flip_upright, double_rotate))
 
         if corner_mask:
             image_pipeline.insert(1, MaskCorners())
@@ -635,12 +635,13 @@ class ImageNetTrainer:
                     loss_angle = self.compute_angle_loss(output_up, output_ang, target_up, target_ang)
                     loss_train = self.merge_losses(loss_class, loss_angle)
 
+            print("loss-cls:" + str(self.loss(output_cls, target)))
             self.scaler.scale(loss_train).backward()
             self.scaler.step(self.optimizer)
             self.scaler.update()
             ### Training end
-            print(ch.sum(self.fc_weight-self.model.module.base_model.fc.weight))
-            print(ch.sum(self.conv1-self.model.module.base_model.layer1[0].conv1.weight))
+            # print(ch.sum(self.fc_weight-self.model.module.base_model.fc.weight))
+            # print(ch.sum(self.conv1-self.model.module.base_model.layer1[0].conv1.weight))
 
             ### Logging start
             if log_level > 0:
@@ -697,10 +698,10 @@ class ImageNetTrainer:
                     if isinstance(images, tuple):
                         images = tuple(x[:target.shape[0]] for x in images)
                         target_up = target_ang = None
-                    if attach_upright_classifier:
-                        target_up = self.prep_angle_target(images[1], up_class=True, val_mode=True)
-                    if attach_ang_classifier:
-                        target_ang = self.prep_angle_target(images[1], up_class=False, val_mode=True)
+                        if attach_upright_classifier:
+                            target_up = self.prep_angle_target(images[1], up_class=True, val_mode=True)
+                        if attach_ang_classifier:
+                            target_ang = self.prep_angle_target(images[1], up_class=False, val_mode=True)
 
                         images = images[0]
 
@@ -712,6 +713,8 @@ class ImageNetTrainer:
 
                             loss_val = self.loss(output_cls, target)
                             self.val_meters['loss_class'](loss_val)
+
+                        print("val loss clss: " + str(self.loss(output_cls, target)))
 
                         if loss_scope == 1 or loss_scope == 2:
                             if attach_upright_classifier:
@@ -725,9 +728,9 @@ class ImageNetTrainer:
                                 # dummy_target = ch.ones(target_ang.shape[0]).type(ch.int).to(self.gpu)
                                 # angle_within = self.angle_within_binsize(output_ang, target_ang)
                                 # self.val_meters['top_1_within_binsize'](angle_within, dummy_target)
-
-                            loss_ang = self.compute_angle_loss(output_up, output_ang, target_up, target_ang)
-                            self.val_meters['loss_angle'](loss_ang)
+                            if attach_upright_classifier or attach_ang_classifier:
+                                loss_ang = self.compute_angle_loss(output_up, output_ang, target_up, target_ang)
+                                self.val_meters['loss_angle'](loss_ang)
 
                     if corr_up:
                         assert attach_upright_classifier
