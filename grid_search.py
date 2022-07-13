@@ -34,7 +34,7 @@ configs_dict["--logging.wandb_project"] = "rewrite_multi_binsize_up_class"
 
 
 #configs_dict["--training.load_from"] = ["mask_rotate", "_mask_norotate"]
-configs_dict["--training.load_from"] = ["mask_norotate"]
+configs_dict["--training.load_from"] = ["_mask_norotate"]
 configs_dict["--angleclassifier.freeze_base"] = 1
 configs_dict["--lr.lr"] = 0.5
 
