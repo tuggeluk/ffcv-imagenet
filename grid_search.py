@@ -34,7 +34,7 @@ configs_dict["--logging.wandb_project"] = "rewrite_multi_binsize_up_class"
 
 
 #configs_dict["--training.load_from"] = ["mask_rotate", "_mask_norotate"]
-configs_dict["--training.load_from"] = ["mask_rotate"]
+configs_dict["--training.load_from"] = ["nomask_norotate"]
 configs_dict["--angleclassifier.freeze_base"] = 1
 configs_dict["--lr.lr"] = 0.5
 
@@ -45,8 +45,6 @@ configs_dict["--angleclassifier.classifier_ang"] = 'deep'
 
 configs_dict["--angleclassifier.flatten"] = 'basic'
 configs_dict["--angle_testmode.double_rotate"] = 0
-
-
 
 
 configs_dict["--data.in_memory"] = 1

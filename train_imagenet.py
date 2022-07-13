@@ -308,7 +308,7 @@ class ImageNetTrainer:
         ]
 
         if random_rotate:
-            image_pipeline.append(RandomRotate_Torch(block_rotate, p_flip_upright))
+            image_pipeline.insert(3, RandomRotate_Torch(block_rotate, p_flip_upright))
 
         if corner_mask:
             image_pipeline.insert(1, MaskCorners())
