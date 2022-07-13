@@ -639,8 +639,8 @@ class ImageNetTrainer:
             self.scaler.step(self.optimizer)
             self.scaler.update()
             ### Training end
-            print(self.fc_weight-self.model.module.base_model.fc.weight)
-            print(self.conv1-self.model.module.base_model.layer1[0].conv1.weight)
+            print(ch.sum(self.fc_weight-self.model.module.base_model.fc.weight))
+            print(ch.sum(self.conv1-self.model.module.base_model.layer1[0].conv1.weight))
 
             ### Logging start
             if log_level > 0:
