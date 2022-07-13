@@ -513,6 +513,8 @@ class ImageNetTrainer:
 
         if freeze_base:
             model.freeze_base()
+            self.fc_weight = model.base_model.fc.weight
+            self.conv1 = model.base_model.layer1[0].conv1.weight
 
         model = model.to(self.gpu)
 
@@ -637,6 +639,8 @@ class ImageNetTrainer:
             self.scaler.step(self.optimizer)
             self.scaler.update()
             ### Training end
+            print(self.fc_weight-self.model.module.base_model.fc.weight)
+            print(self.conv1-self.model.module.base_model.layer1[0].conv1.weight)
 
             ### Logging start
             if log_level > 0:
@@ -693,10 +697,10 @@ class ImageNetTrainer:
                     if isinstance(images, tuple):
                         images = tuple(x[:target.shape[0]] for x in images)
                         target_up = target_ang = None
-                        if attach_upright_classifier:
-                            target_up = self.prep_angle_target(images[1], up_class=True, val_mode=True)
-                        if attach_ang_classifier:
-                            target_ang = self.prep_angle_target(images[1], up_class=False, val_mode=True)
+                    if attach_upright_classifier:
+                        target_up = self.prep_angle_target(images[1], up_class=True, val_mode=True)
+                    if attach_ang_classifier:
+                        target_ang = self.prep_angle_target(images[1], up_class=False, val_mode=True)
 
                         images = images[0]
 
@@ -727,6 +731,8 @@ class ImageNetTrainer:
 
                     if corr_up:
                         assert attach_upright_classifier
+                        assert len(output_up) == len(angle_binsize)
+
 
                         output_cls_corr_up = output_cls
                         for k in ['top_1_class_corr_up', 'top_5_class_corr_up']:
