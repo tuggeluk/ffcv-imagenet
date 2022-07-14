@@ -34,7 +34,6 @@ from ffcv.fields.rgb_image import CenterCropRGBImageDecoder, \
     RandomResizedCropRGBImageDecoder
 from ffcv.fields.basics import IntDecoder
 from input_tranformations.mask_corners import MaskCorners
-from input_tranformations.rotate import RandomRotate
 from input_tranformations.rotate_torch import RandomRotate_Torch
 from input_tranformations.own_ops import NormalizeImage, ToTorchImage
 import wandb
@@ -100,7 +99,7 @@ Section('logging', 'how to log stuff').params(
 
 Section('validation', 'Validation parameters stuff').params(
     batch_size=Param(int, 'The batch size for validation', default=512),
-    resolution=Param(int, 'final resized validation image size', default=224),
+    resolution=Param(int, 'final resized validation image size', default=256),
     lr_tta=Param(int, 'should do lr flipping/avging at test time', default=0),
     corner_mask=Param(int, 'should mask corners at test time', default=0),
     random_rotate=Param(int, 'should random rotate at test time', default=0),

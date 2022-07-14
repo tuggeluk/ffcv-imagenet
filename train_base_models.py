@@ -9,11 +9,9 @@ on_dgx = 'dgx' in hostname
 configs_dict = OrderedDict()
 
 if on_dgx:
-    configs_dict["--config-file"] = "angleclass_configs/rn50_angleclass_base.yaml"
+    configs_dict["--config-file"] = "configs/base_models/base_models_100_epochs.yaml"
     configs_dict["--data.train_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/train.ffcv"
     configs_dict["--data.val_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/val.ffcv"
-    #configs_dict["--logging.folder"] = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
-    checkpoints_basedir = "logs/rn50_base_configs"
     logging_basedir = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
     run_name_prefix = ""
 else:
@@ -23,25 +21,10 @@ else:
 configs_dict["--data.num_workers"] = 12
 configs_dict["--data.in_memory"] = 1
 configs_dict["--logging.wandb_dryrun"] = 0
-configs_dict["--logging.wandb_project"] = "train_anglclass_fixed_pipeline"
-#configs_dict["--logging.wandb_run"] = ""
+configs_dict["--logging.wandb_project"] = "train_base_models"
 
+configs_dict["--model.arch"] = ['resnet18', 'resnet50', 'resnet152', 'efficientnet_b0', 'efficientnet_b4', 'efficientnet_b6', 'resnext50_32x4d', 'resnext101_32x8d']
 
-#configs_dict["--training.load_from"] = ["mask_rotate", "_mask_norotate"]
-configs_dict["--training.load_from"] = ["_mask_norotate"]
-configs_dict["--angleclassifier.freeze_base"] = 1
-configs_dict["--lr.lr"] = 0.5
-
-configs_dict["--angleclassifier.attach_upright_classifier"] = [1]
-configs_dict["--angleclassifier.attach_ang_classifier"] = [1]
-configs_dict["--angleclassifier.classifier_upright"] = 'deep'
-configs_dict["--angleclassifier.classifier_ang"] = 'deep'
-
-configs_dict["--angleclassifier.flatten"] = 'basic'
-configs_dict["--angle_testmode.double_rotate"] = 0
-
-
-configs_dict["--data.in_memory"] = 1
 #configs_dict["--training.epochs"] = 1
 
 def extend_commands(commands:list, append:str) -> list:
@@ -60,12 +43,7 @@ def build_training_commands() -> list:
             training_commands = len(v)*training_commands
             wandb_run_names = len(v)*wandb_run_names
             for i, vv in enumerate(v):
-                if k == '--training.load_from':
-                    candidate_configs = [x for x in os.listdir(checkpoints_basedir) if vv in x]
-                    assert len(candidate_configs) == 1
-                    p = os.path.join(checkpoints_basedir, candidate_configs[0], 'final_weights.pt')
-                    append_cmd = str(k)+"="+p+" "
-                elif k == '--resolution.max_res':
+                if k == '--resolution.max_res':
                     append_cmd = str(k)+"="+str(vv)+" "
                     append_cmd += "--validation.resolution="+str(vv)+" "
                 else:
