@@ -13,13 +13,13 @@ model:
 resolution:
   end_ramp: 76
   max_res: 192
-  min_res: 192
+  min_res: 160
   start_ramp: 65
 training:
   batch_size: 256
   bn_wd: 0
   distributed: 1
-  epochs: 1
+  epochs: 100
   label_smoothing: 0.1
   momentum: 0.9
   optimizer: sgd
