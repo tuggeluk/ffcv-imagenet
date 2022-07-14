@@ -23,8 +23,8 @@ configs_dict["--data.in_memory"] = 1
 configs_dict["--logging.wandb_dryrun"] = 0
 configs_dict["--logging.wandb_project"] = "train_base_models"
 
-configs_dict["--model.arch"] = ['resnet18', 'resnet50', 'resnet152', 'efficientnet_b0', 'efficientnet_b4', 'efficientnet_b6', 'resnext50_32x4d', 'resnext101_32x8d']
-
+#configs_dict["--model.arch"] = ['resnet18', 'resnet50', 'resnet152', 'efficientnet_b0', 'efficientnet_b3', 'efficientnet_b5', 'resnext50_32x4d', 'resnext101_32x8d']
+configs_dict["--model.arch"] = ['efficientnet_b5']
 #configs_dict["--training.epochs"] = 1
 
 def extend_commands(commands:list, append:str) -> list:
