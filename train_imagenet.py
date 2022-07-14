@@ -137,7 +137,7 @@ Section('angleclassifier', 'distributed training options').params(
     classifier_upright=Param(str, 'which angle classifier should be used', default='deep'),
     classifier_ang=Param(str, 'which angle classifier should be used', default='deep'),
 
-    loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=1),
+    loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=0),
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
     angle_binsize=Param(Fastargs_List(), 'angle width lumped into one class', default=[1, 12, 45, 90, 180]),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
@@ -147,8 +147,8 @@ Section('angleclassifier', 'distributed training options').params(
 
 Section('angle_testmode', 'configure how testing performed').params(
     standard=Param(int, 'individually evaluate class/upright/angle predictions', default=1),
-    corr_up=Param(int, 'evaluate angle corrected class prediction', default=1),
-    corr_pred=Param(int, 'evaluate angle corrected class prediction', default=1),
+    corr_up=Param(int, 'evaluate angle corrected class prediction', default=0),
+    corr_pred=Param(int, 'evaluate angle corrected class prediction', default=0),
     double_rotate=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
 )
 

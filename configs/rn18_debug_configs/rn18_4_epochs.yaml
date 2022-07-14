@@ -7,7 +7,7 @@ dist:
 logging:
   folder: /tmp/
   log_level: 1
-  wandb_dryrun: 0
+  wandb_dryrun: 1
   wandb_project: rotation_benchmark
   wandb_run: rn18_4_epoch_debug
   wandb_batch_interval: 10
@@ -16,7 +16,7 @@ lr:
   lr_peak_epoch: 2
   lr_schedule_type: cyclic
 model:
-  arch: resnet50
+  arch: efficientnet_b0
 resolution:
   end_ramp: 13
   max_res: 192
@@ -35,7 +35,7 @@ training:
   corner_mask: 1
   random_rotate: 1
   block_rotate: 0
-  checkpoint_interval: 1
+  checkpoint_interval: -1
   eval_only: 0
 validation:
   lr_tta: False
