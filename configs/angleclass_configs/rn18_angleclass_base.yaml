@@ -21,7 +21,7 @@ resolution:
   min_res: 256
   start_ramp: 0
 training:
-  batch_size: 512
+  batch_size: 256
   bn_wd: 0
   distributed: 1
   epochs: 3
@@ -37,6 +37,7 @@ training:
 validation:
   lr_tta: false
   resolution: 256
+  batch_size: 256
   corner_mask: 1
   random_rotate: 1
   p_flip_upright: 0
