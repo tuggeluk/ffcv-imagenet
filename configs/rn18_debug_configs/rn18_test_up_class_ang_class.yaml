@@ -19,14 +19,14 @@ validation:
   p_flip_upright: 0
 angle_testmode:
   standard: 1
-  corr_up: 0
-  corr_pred: 0
+  corr_up: 1
+  corr_pred: 1
 angleclassifier:
-  attach_upright_classifier: 0
-  attach_ang_classifier: 0
+  attach_upright_classifier: 1
+  attach_ang_classifier: 1
   classifier_upright: deep
   classifier_ang: deep
-  angle_binsize: [1, 12, 45, 90, 180]
+  angle_binsize: [lr, 1, 12, 45, 90, 180]
   loss_scope: 2
 training:
   load_from: logs/low_lr_rn18_load_from:_mask_norotate__attach_upright_classifier:1__attach_ang_classifier:1__/final_weights.pt

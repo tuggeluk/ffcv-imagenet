@@ -527,9 +527,13 @@ class ImageNetTrainer:
     def bin_angles(self, angles, angle_binsize):
         angle_classes = list()
         for b_size in angle_binsize:
-            offset = int(b_size / 2)
-            angle_class = ((angles <= offset) + (angles-360 >= -offset))*1
-            angle_classes.append(angle_class)
+            if b_size == 'lr':
+                angle_class = (angles > 180)*1
+                angle_classes.append(angle_class)
+            else:
+                offset = int(b_size / 2)
+                angle_class = ((angles <= offset) + (angles-360 >= -offset))*1
+                angle_classes.append(angle_class)
         return angle_classes
 
     def bin_sin_cos(self, values):
@@ -734,6 +738,7 @@ class ImageNetTrainer:
                     if corr_up:
                         assert attach_upright_classifier
                         assert len(output_up) == len(angle_binsize)
+
 
 
                         output_cls_corr_up = output_cls
