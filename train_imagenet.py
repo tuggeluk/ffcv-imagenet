@@ -137,7 +137,7 @@ Section('angleclassifier', 'distributed training options').params(
     classifier_upright=Param(str, 'which angle classifier should be used', default='deep'),
     classifier_ang=Param(str, 'which angle classifier should be used', default='deep'),
 
-    loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=0),
+    loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=1),
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
     angle_binsize=Param(Fastargs_List(), 'angle width lumped into one class', default=['lr', 1, 4, 12, 45, 180]),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
