@@ -9,7 +9,7 @@ on_dgx = 'dgx' in hostname
 configs_dict = OrderedDict()
 
 if on_dgx:
-    configs_dict["--config-file"] = "angleclass_configs/rn50_angleclass_base.yaml"
+    configs_dict["--config-file"] = "configs/angleclass_configs/rn50_angleclass_base.yaml"
     configs_dict["--data.train_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/train.ffcv"
     configs_dict["--data.val_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/val.ffcv"
     #configs_dict["--logging.folder"] = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
@@ -17,7 +17,7 @@ if on_dgx:
     logging_basedir = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
     run_name_prefix = "rn50_"
 else:
-    configs_dict["--config-file"] = "angleclass_configs/rn18_angleclass_base.yaml"
+    configs_dict["--config-file"] = "configs/angleclass_configs/rn18_angleclass_base.yaml"
     configs_dict["--data.train_dataset"] = "/home/ubuntu/ImageNet_ffcv/train.ffcv"
     configs_dict["--data.val_dataset"] = "/home/ubuntu/ImageNet_ffcv/val.ffcv"
     #configs_dict["--logging.folder"] = "/home/ubuntu/rotation_module/ffcv-imagenet/logs"
@@ -42,7 +42,7 @@ configs_dict["--angleclassifier.attach_upright_classifier"] = [1]
 configs_dict["--angleclassifier.attach_ang_classifier"] = [1]
 configs_dict["--angleclassifier.classifier_upright"] = 'deep'
 configs_dict["--angleclassifier.classifier_ang"] = 'deep'
-configs_dict["--angleclassifier.angle_binsize"] = ['lr', 1, 4, 12, 45, 180]
+#configs_dict["--angleclassifier.angle_binsize"] = ['lr', 1, 4, 12, 45, 180]
 
 configs_dict["--angleclassifier.flatten"] = 'basic'
 configs_dict["--angle_testmode.double_rotate"] = 0
