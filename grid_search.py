@@ -38,10 +38,10 @@ configs_dict["--training.load_from"] = ["_mask_norotate"]
 configs_dict["--angleclassifier.freeze_base"] = 1
 configs_dict["--lr.lr"] = 0.5
 
-configs_dict["--angleclassifier.attach_upright_classifier"] = [1]
-configs_dict["--angleclassifier.attach_ang_classifier"] = [1]
-configs_dict["--angleclassifier.classifier_upright"] = 'deep'
-configs_dict["--angleclassifier.classifier_ang"] = 'deep'
+configs_dict["--angleclassifier.attach_upright_classifier"] = 1
+configs_dict["--angleclassifier.attach_ang_classifier"] = 1
+configs_dict["--angleclassifier.classifier_upright"] = ['deep']
+configs_dict["--angleclassifier.classifier_ang"] = ['deep', 'deepx2', 'deepslant']
 #configs_dict["--angleclassifier.angle_binsize"] = ['lr', 1, 4, 12, 45, 180]
 
 configs_dict["--angleclassifier.flatten"] = 'basic'
@@ -49,7 +49,7 @@ configs_dict["--angleclassifier.flatten"] = 'basic'
 
 
 configs_dict["--data.in_memory"] = 1
-#configs_dict["--training.epochs"] = 1
+configs_dict["--training.epochs"] = 10
 
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):
