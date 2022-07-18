@@ -45,7 +45,7 @@ configs_dict["--angleclassifier.classifier_ang"] = 'deep'
 #configs_dict["--angleclassifier.angle_binsize"] = ['lr', 1, 4, 12, 45, 180]
 
 configs_dict["--angleclassifier.flatten"] = 'basic'
-configs_dict["--angle_testmode.double_rotate"] = 0
+
 
 
 configs_dict["--data.in_memory"] = 1
