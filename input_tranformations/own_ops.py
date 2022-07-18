@@ -88,7 +88,7 @@ class NormalizeImage(Operation):
     """
 
     def __init__(self, mean: np.ndarray, std: np.ndarray,
-                 type: np.dtype):
+                 type: np.dtype, return_orig_img = False):
         super().__init__()
         table = (np.arange(256)[:, None] - mean[None, :]) / std[None, :]
         self.original_dtype = type
@@ -100,6 +100,7 @@ class NormalizeImage(Operation):
         self.lookup_table = table
         self.previous_shape = None
         self.mode = 'cpu'
+        self.return_orig_img = return_orig_img
 
     def generate_code(self) -> Callable:
         if self.mode == 'cpu':
@@ -117,13 +118,20 @@ class NormalizeImage(Operation):
         final_type = ch_dtype_from_numpy(self.original_dtype)
         s = self
         def normalize_convert(images, result):
+
             angles = None
             if isinstance(images, tuple):
                 angles = images[1]
                 images = images[0]
+
+            ret_img = None
+            if s.return_orig_img:
+                ret_img = images.clone()
+
             B, C, H, W = images.shape
             table = self.lookup_table.view(-1)
             assert images.is_contiguous(memory_format=ch.channels_last), 'Images need to be in channel last'
+
             result = result[:B]
             result_c = result.view(-1)
             images = images.permute(0, 2, 3, 1).view(-1)
@@ -137,10 +145,10 @@ class NormalizeImage(Operation):
 
             assert final_result.is_contiguous(memory_format=ch.channels_last), 'Images need to be in channel last'
 
-            if angles is None:
+            if angles is None and ret_img is None:
                 return final_result.view(final_type)
             else:
-                return (final_result.view(final_type), angles)
+                return (final_result.view(final_type), (angles, ret_img))
 
         return normalize_convert
 

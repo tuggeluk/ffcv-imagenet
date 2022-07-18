@@ -19,6 +19,7 @@ class MaskCorners(Operation):
     def generate_code(self):
         parallel_range = Compiler.get_iterator()
         def mask_corner(images, dst):
+
             for i in parallel_range(images.shape[0]):
                 # x = np.arange(0, images[i].shape[0], 1) - np.floor(images[i].shape[0] / 2)
                 # y = np.arange(0, images[i].shape[1], 1) - np.floor(images[i].shape[1] / 2)
@@ -30,6 +31,7 @@ class MaskCorners(Operation):
                     for x, dim2 in zip(np.arange(0, images[i].shape[1], 1) - np.floor(images[i].shape[1] / 2), range(images[i].shape[1])):
                         if (np.sqrt((x * x) + (y * y)) - images[i].shape[0] / 2) > 0:
                             dst[i, dim1, dim2] = 0
+
             return dst
 
         mask_corner.is_parallel = True

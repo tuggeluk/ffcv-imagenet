@@ -29,5 +29,5 @@ angleclassifier:
   angle_binsize: [lr, 1, 12, 45, 90, 180]
   loss_scope: 2
 training:
-  load_from: logs/low_lr_rn18_load_from:_mask_norotate__attach_upright_classifier:1__attach_ang_classifier:1__/final_weights.pt
+  load_from: logs/rn18_load_from:_mask_norotate__attach_upright_classifier:1__attach_ang_classifier:1__/final_weights.pt
   eval_only: 1

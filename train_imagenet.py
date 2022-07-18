@@ -35,12 +35,14 @@ from ffcv.fields.rgb_image import CenterCropRGBImageDecoder, \
 from ffcv.fields.basics import IntDecoder
 from input_tranformations.mask_corners import MaskCorners
 from input_tranformations.rotate_torch import RandomRotate_Torch
+from input_tranformations.mask_corners_torch import MaskCorners_Torch
 from input_tranformations.own_ops import NormalizeImage, ToTorchImage
 import wandb
 from rotation_module.angle_classifier_wrapper import AngleClassifierWrapper
 from rotation_module.fc_angle_classifier import FcAngleClassifier
 from rotation_module.fc2_angle_classifier import Fc2AngleClassifier
 from rotation_module.deep_angle_classifier import DeepAngleClassifier
+from torchvision.transforms.functional import rotate
 
 class Fastargs_List(Checker):
     def __init__(self, cast_to = str):
@@ -103,7 +105,9 @@ Section('validation', 'Validation parameters stuff').params(
     lr_tta=Param(int, 'should do lr flipping/avging at test time', default=0),
     corner_mask=Param(int, 'should mask corners at test time', default=0),
     random_rotate=Param(int, 'should random rotate at test time', default=0),
-    p_flip_upright = Param(float, 'percentage of images to be upright', default=0)
+    p_flip_upright = Param(float, 'percentage of images to be upright', default=0),
+    double_rotate = Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
+    pre_flip = Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0)
 )
 
 Section('training', 'training hyper param stuff').params(
@@ -121,7 +125,8 @@ Section('training', 'training hyper param stuff').params(
     checkpoint_interval=Param(int, 'interval of saved checkpoints', default=-1),
     block_rotate=Param(int, 'should the whole tensor be rotated at once', default=0),
     p_flip_upright=Param(float, 'percentage of images to be upright', default=0),
-    load_from=Param(str, 'path of pretrained weights', default="")
+    load_from=Param(str, 'path of pretrained weights', default=""),
+    double_rotate = Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0)
 )
 
 Section('dist', 'distributed training options').params(
@@ -149,7 +154,6 @@ Section('angle_testmode', 'configure how testing performed').params(
     standard=Param(int, 'individually evaluate class/upright/angle predictions', default=1),
     corr_up=Param(int, 'evaluate angle corrected class prediction', default=0),
     corr_pred=Param(int, 'evaluate angle corrected class prediction', default=0),
-    double_rotate=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
 )
 
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406]) * 255
@@ -310,7 +314,7 @@ class ImageNetTrainer:
             image_pipeline.insert(3, RandomRotate_Torch(block_rotate, p_flip_upright))
 
         if corner_mask:
-            image_pipeline.insert(1, MaskCorners())
+            image_pipeline.insert(4, MaskCorners_Torch())
 
         label_pipeline: List[Operation] = [
             IntDecoder(),
@@ -343,27 +347,29 @@ class ImageNetTrainer:
     @param('validation.random_rotate')
     @param('training.block_rotate')
     @param('validation.p_flip_upright')
-    @param('angle_testmode.double_rotate')
+    @param('validation.double_rotate')
+    @param('validation.pre_flip')
     def create_val_loader(self, val_dataset, num_workers, batch_size,
-                          resolution, distributed, corner_mask, random_rotate, block_rotate, p_flip_upright, double_rotate):
+                          resolution, distributed, corner_mask, random_rotate, block_rotate, p_flip_upright, double_rotate, pre_flip):
         this_device = f'cuda:{self.gpu}'
         val_path = Path(val_dataset)
         assert val_path.is_file()
         res_tuple = (resolution, resolution)
         cropper = CenterCropRGBImageDecoder(res_tuple, ratio=DEFAULT_CROP_RATIO)
+        self.val_normalizer = NormalizeImage(IMAGENET_MEAN, IMAGENET_STD, np.float16, return_orig_img=True)
         image_pipeline = [
             cropper,
             ToTensor(),
             ToDevice(ch.device(this_device), non_blocking=True),
             ToTorchImage(),
-            NormalizeImage(IMAGENET_MEAN, IMAGENET_STD, np.float16)
+            self.val_normalizer
         ]
 
         if random_rotate:
-            image_pipeline.insert(3, RandomRotate_Torch(block_rotate, p_flip_upright, double_rotate))
+            image_pipeline.insert(3, RandomRotate_Torch(block_rotate, p_flip_upright, double_rotate, pre_flip))
 
         if corner_mask:
-            image_pipeline.insert(1, MaskCorners())
+            image_pipeline.insert(4, MaskCorners_Torch())
 
         label_pipeline = [
             IntDecoder(),
@@ -700,11 +706,17 @@ class ImageNetTrainer:
                 for images, target in tqdm(self.val_loader):
                     if isinstance(images, tuple):
                         images = tuple(x[:target.shape[0]] for x in images)
+
+                        angles = images[1][0]
+                        angles = angles[:target.shape[0]]
+                        pre_norm_imgs = images[1][1]
+                        pre_norm_imgs = pre_norm_imgs[:target.shape[0]]
+
                         target_up = target_ang = None
                         if attach_upright_classifier:
-                            target_up = self.prep_angle_target(images[1], up_class=True, val_mode=True)
+                            target_up = self.prep_angle_target(angles, up_class=True, val_mode=True)
                         if attach_ang_classifier:
-                            target_ang = self.prep_angle_target(images[1], up_class=False, val_mode=True)
+                            target_ang = self.prep_angle_target(angles, up_class=False, val_mode=True)
 
                         images = images[0]
 
@@ -735,27 +747,45 @@ class ImageNetTrainer:
                                 loss_ang = self.compute_angle_loss(output_up, output_ang, target_up, target_ang)
                                 self.val_meters['loss_angle'](loss_ang)
 
-                    if corr_up:
-                        assert attach_upright_classifier
-                        assert len(output_up) == len(angle_binsize)
-
-
-
-                        output_cls_corr_up = output_cls
-                        for k in ['top_1_class_corr_up', 'top_5_class_corr_up']:
-                            self.val_meters[k](output_cls_corr_up, target)
+                    # if corr_up:
+                    #     assert attach_upright_classifier
+                    #     assert len(output_up) == len(angle_binsize)
+                    #
+                    #     output_cls_corr_up = output_cls
+                    #     for k in ['top_1_class_corr_up', 'top_5_class_corr_up']:
+                    #         self.val_meters[k](output_cls_corr_up, target)
 
                     if corr_pred:
                         assert attach_ang_classifier
+                        unrotate_ang = (360 - ch.argmax(output_ang, 1))
+                        for i in range(len(unrotate_ang)):
+                            pre_norm_imgs[i] = rotate(pre_norm_imgs[i], int(unrotate_ang[i]))
 
-                        output_cls_corr_pred = output_cls
+                        normed = self.norm_images(pre_norm_imgs, images.dtype)
+
+                        output_cls_corr_pred, _, _ = self.model(normed)
+
                         for k in ['top_1_class_corr_pred', 'top_5_class_corr_pred']:
                             self.val_meters[k](output_cls_corr_pred, target)
 
-
+        # stats = dict()
+        # for k, m in self.val_meters.items():
+        #     print(k)
+        #     stats[k] = m.compute().item()
         stats = {k: m.compute().item() for k, m in self.val_meters.items()}
         [meter.reset() for meter in self.val_meters.values()]
         return stats
+
+    def norm_images(self, pre_normed, dtype):
+        table = ((ch.arange(256)[:, None] - IMAGENET_MEAN[None, :]) / IMAGENET_STD[None, :])
+        table = table.type(dtype)
+        table = table.to(self.gpu)
+        normed = pre_normed.clone().type(dtype)
+        for i in range(3):
+            normed[:, i, :, :] = table[pre_normed[:, i, :, :].view(-1).type(ch.long), i].reshape(
+                pre_normed[:, i, :, :].shape)
+
+        return normed
 
     @param('logging.folder')
     @param('logging.wandb_dryrun')
@@ -788,9 +818,9 @@ class ImageNetTrainer:
 
             self.val_meters['loss_angle'] = MeanScalarMetric(compute_on_step=False).to(self.gpu)
 
-        if corr_up:
-            self.val_meters['top_1_class_corr_up'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
-            self.val_meters['top_5_class_corr_up'] = torchmetrics.Accuracy(compute_on_step=False, top_k=5).to(self.gpu)
+        # if corr_up:
+        #     self.val_meters['top_1_class_corr_up'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
+        #     self.val_meters['top_5_class_corr_up'] = torchmetrics.Accuracy(compute_on_step=False, top_k=5).to(self.gpu)
 
         if corr_pred:
             self.val_meters['top_1_class_corr_pred'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
