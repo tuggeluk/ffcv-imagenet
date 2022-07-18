@@ -618,12 +618,21 @@ class ImageNetTrainer:
         iterator = tqdm(self.train_loader)
         for ix, (images, target) in enumerate(iterator):
 
-            target_up = target_ang = None
             if isinstance(images, tuple):
+                images = tuple(x[:target.shape[0]] for x in images)
+
+                angles = images[1][0]
+                if angles is not None:
+                    angles = angles[:target.shape[0]]
+                pre_norm_imgs = images[1][1]
+                if pre_norm_imgs is not None:
+                    pre_norm_imgs = pre_norm_imgs[:target.shape[0]]
+
+                target_up = target_ang = None
                 if attach_upright_classifier:
-                    target_up = self.prep_angle_target(images[1], up_class=True)
+                    target_up = self.prep_angle_target(angles, up_class=True)
                 if attach_ang_classifier:
-                    target_ang = self.prep_angle_target(images[1], up_class=False)
+                    target_ang = self.prep_angle_target(angles, up_class=False)
 
                 images = images[0]
 
