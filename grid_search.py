@@ -50,7 +50,7 @@ configs_dict["--angleclassifier.flatten"] = 'basic'
 
 
 configs_dict["--data.in_memory"] = 1
-configs_dict["--training.epochs"] = 3
+configs_dict["--training.epochs"] = 10
 
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):
