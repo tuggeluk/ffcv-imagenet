@@ -38,7 +38,6 @@ class MaskCorners_Torch(Operation):
 
 
     def generate_code(self) -> Callable:
-        parallel_range = Compiler.get_iterator()
 
         def random_rotate_tensor(images, _, indices):
             # check for angles

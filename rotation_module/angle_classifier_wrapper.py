@@ -6,6 +6,7 @@ import torch as ch
 from torch import Tensor
 from torchvision.models.efficientnet import EfficientNet
 from collections import OrderedDict
+from torch.nn.modules.batchnorm import BatchNorm2d
 
 class AngleClassifierWrapper(ch.nn.Module):
     """Transform using the given torch.nn.Module
@@ -41,7 +42,15 @@ class AngleClassifierWrapper(ch.nn.Module):
     def freeze_base(self) -> None:
         for param in self.base_model.parameters():
             param.requires_grad = False
+        self.freeze_bn(self.base_model)
         return None
+
+    def freeze_bn(self, module):
+        if isinstance(module, BatchNorm2d):
+            module.eval()
+            print(module)
+        for child in module.children():
+            self.freeze_bn(child)
 
     def unfreeze_base(self) -> None:
         for param in self.base_model.parameters():

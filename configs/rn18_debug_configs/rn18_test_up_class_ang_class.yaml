@@ -15,19 +15,20 @@ model:
 validation:
   resolution: 256
   corner_mask: 1
-  random_rotate: 1
+  random_rotate: 0
   p_flip_upright: 0
 angle_testmode:
   standard: 1
-  corr_up: 1
-  corr_pred: 1
+  corr_up: 0
+  corr_pred: 0
 angleclassifier:
-  attach_upright_classifier: 1
-  attach_ang_classifier: 1
+  freeze_base: 1
+  attach_upright_classifier: 0
+  attach_ang_classifier: 0
   classifier_upright: deep
   classifier_ang: deep
   angle_binsize: [lr, 1, 12, 45, 90, 180]
   loss_scope: 2
 training:
-  load_from: logs/rn18_load_from:_mask_norotate__attach_upright_classifier:1__attach_ang_classifier:1__/final_weights.pt
+  load_from: logs/rn18_load_from:_mask_norotate__classifier_upright:deep__classifier_ang:deep__/final_weights.pt
   eval_only: 1

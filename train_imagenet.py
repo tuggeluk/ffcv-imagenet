@@ -314,7 +314,11 @@ class ImageNetTrainer:
             image_pipeline.insert(3, RandomRotate_Torch(block_rotate, p_flip_upright))
 
         if corner_mask:
-            image_pipeline.insert(4, MaskCorners_Torch())
+            if random_rotate:
+                image_pipeline.insert(4, MaskCorners_Torch())
+            else:
+                image_pipeline.insert(3, MaskCorners_Torch())
+
 
         label_pipeline: List[Operation] = [
             IntDecoder(),
@@ -369,7 +373,10 @@ class ImageNetTrainer:
             image_pipeline.insert(3, RandomRotate_Torch(block_rotate, p_flip_upright, double_rotate, pre_flip))
 
         if corner_mask:
-            image_pipeline.insert(4, MaskCorners_Torch())
+            if random_rotate:
+                image_pipeline.insert(4, MaskCorners_Torch())
+            else:
+                image_pipeline.insert(3, MaskCorners_Torch())
 
         label_pipeline = [
             IntDecoder(),
@@ -515,7 +522,18 @@ class ImageNetTrainer:
                 print(missing)
                 print(" ---------- unexptected keys ----------")
                 print(unexpected)
-
+            # state_dict_noang = ch.load("logs/rn18_base_configs/rn18_88_epochs_mask_norotate.yaml/final_weights.pt")
+            # state_dict_renamed_noang = OrderedDict()
+            # for k, v in state_dict_noang.items():
+            #     #rename keys
+            #     kn = k[7:]
+            #     if ((not "up_class" in k) and (not "ang_class" in k)) and (not "base_model" in k):
+            #         kn = "base_model."+kn
+            #     state_dict_renamed_noang[kn] = state_dict_noang[k]
+            # for k,v in state_dict_renamed_noang.items():
+            #     diff = ch.sum(state_dict_renamed_noang[k] - state_dict_renamed[k])
+            #     if diff > 0:
+            #         print(k)
         if freeze_base:
             model.freeze_base()
             self.fc_weight = model.base_model.fc.weight
@@ -717,9 +735,11 @@ class ImageNetTrainer:
                         images = tuple(x[:target.shape[0]] for x in images)
 
                         angles = images[1][0]
-                        angles = angles[:target.shape[0]]
+                        if angles is not None:
+                            angles = angles[:target.shape[0]]
                         pre_norm_imgs = images[1][1]
-                        pre_norm_imgs = pre_norm_imgs[:target.shape[0]]
+                        if pre_norm_imgs is not None:
+                            pre_norm_imgs = pre_norm_imgs[:target.shape[0]]
 
                         target_up = target_ang = None
                         if attach_upright_classifier:
