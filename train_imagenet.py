@@ -148,6 +148,7 @@ Section('angleclassifier', 'distributed training options').params(
     prio_class=Param(float, 'should we use regression for the angle', default=1),
     prio_angle=Param(float, 'should we use regression for the angle', default=1),
     flatten=Param(And(str, OneOf(['basic', 'extended'])), 'flatten with avg pool (1,1) or (5,5)', default='basic'),
+    shape_class_loss=Param(int, 'perform loss shaping on the angle classifier', default=1)
 )
 
 Section('angle_testmode', 'configure how testing performed').params(
@@ -536,8 +537,7 @@ class ImageNetTrainer:
             #         print(k)
         if freeze_base:
             model.freeze_base()
-            self.fc_weight = model.base_model.fc.weight
-            self.conv1 = model.base_model.layer1[0].conv1.weight
+            self.bn1 = model.base_model.bn1.weight
 
         model = model.to(self.gpu)
 
@@ -624,8 +624,9 @@ class ImageNetTrainer:
     @param('angleclassifier.loss_scope')
     @param('angleclassifier.attach_upright_classifier')
     @param('angleclassifier.attach_ang_classifier')
+    @param('angleclassifier.shape_class_loss')
     def train_loop(self, epoch, log_level, wandb_dryrun, wandb_batch_interval,
-                   loss_scope, attach_upright_classifier, attach_ang_classifier):
+                   loss_scope, attach_upright_classifier, attach_ang_classifier, shape_class_loss):
         model = self.model
         model.train()
 
@@ -650,7 +651,8 @@ class ImageNetTrainer:
                 if attach_upright_classifier:
                     target_up = self.prep_angle_target(angles, up_class=True)
                 if attach_ang_classifier:
-                    target_ang = self.prep_angle_target(angles, up_class=False)
+                    val_mode = not shape_class_loss
+                    target_ang = self.prep_angle_target(angles, up_class=False, val_mode=val_mode)
 
                 images = images[0]
 
@@ -713,6 +715,8 @@ class ImageNetTrainer:
 
                             wandb.log(wandb_log_dict)
             ### Logging end
+        print(ch.sum(self.bn1 - self.model.module.base_model.bn1.weight))
+
         return loss_train
 
 
