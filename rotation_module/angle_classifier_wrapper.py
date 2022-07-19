@@ -48,6 +48,7 @@ class AngleClassifierWrapper(ch.nn.Module):
     def freeze_bn(self, module):
         if isinstance(module, BatchNorm2d):
             module.eval()
+            module.track_running_stats = False
             print(module)
         for child in module.children():
             self.freeze_bn(child)

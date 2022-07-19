@@ -537,7 +537,7 @@ class ImageNetTrainer:
             #         print(k)
         if freeze_base:
             model.freeze_base()
-            self.bn1 = model.base_model.bn1.weight
+            self.bn1 = model.base_model.bn1.running_mean
 
         model = model.to(self.gpu)
 
@@ -680,6 +680,7 @@ class ImageNetTrainer:
             ### Training end
             # print(ch.sum(self.fc_weight-self.model.module.base_model.fc.weight))
             # print(ch.sum(self.conv1-self.model.module.base_model.layer1[0].conv1.weight))
+            # print(ch.sum(self.bn1 - self.model.module.base_model.bn1.running_mean.cpu()))
 
             ### Logging start
             if log_level > 0:
@@ -715,7 +716,6 @@ class ImageNetTrainer:
 
                             wandb.log(wandb_log_dict)
             ### Logging end
-        print(ch.sum(self.bn1 - self.model.module.base_model.bn1.weight))
 
         return loss_train
 
