@@ -144,7 +144,7 @@ Section('angleclassifier', 'distributed training options').params(
 
     loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=1),
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
-    angle_binsize=Param(Fastargs_List(), 'angle width lumped into one class', default=['lr', 1, 4, 12, 45, 180]),
+    angle_binsize=Param(Fastargs_List(), 'angle width lumped into one class', default=['lr', 3]),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
     prio_angle=Param(float, 'should we use regression for the angle', default=1),
     flatten=Param(And(str, OneOf(['basic', 'extended'])), 'flatten with avg pool (1,1) or (5,5)', default='basic'),
@@ -805,7 +805,7 @@ class ImageNetTrainer:
                         corr_imgs = self.norm_images(corr_imgs, images.dtype)
                         output_cls_corr_pred, ouput_up_corr_pred, ouput_ang_corr_pred = self.model(corr_imgs)
 
-                        refine_predictions = True
+                        refine_predictions = False
                         if refine_predictions:
                             refine_angles = [90, 180, 270]
                             output_cls_corr_preds = [output_cls_corr_pred]

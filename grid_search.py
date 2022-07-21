@@ -43,7 +43,7 @@ configs_dict["--angleclassifier.attach_ang_classifier"] = 1
 configs_dict["--angleclassifier.classifier_upright"] = ['deep']
 #configs_dict["--angleclassifier.classifier_ang"] = ['deep']
 configs_dict["--angleclassifier.classifier_ang"] = ['deep', 'deepx2', 'deepslant']
-configs_dict["--angleclassifier.angle_binsize"] = ['lr', 3]
+
 
 configs_dict["--angleclassifier.flatten"] = 'basic'
 
