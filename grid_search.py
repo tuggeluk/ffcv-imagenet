@@ -52,7 +52,7 @@ configs_dict["--angle_testmode.corr_pred"] = [1]
 
 
 configs_dict["--data.in_memory"] = 1
-configs_dict["--training.epochs"] = 10
+configs_dict["--training.epochs"] = 30
 
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):
