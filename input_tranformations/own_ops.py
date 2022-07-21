@@ -29,7 +29,9 @@ class ToTorchImage(Operation):
         def to_torch_image(inp: ch.Tensor, dst):
             # Returns a permuted view of the same tensor
             angles = None
+            orig_images = None
             if isinstance(inp, tuple):
+                orig_images = inp[2]
                 angles = inp[1]
                 inp = inp[0]
             if do_conv:
@@ -42,14 +44,14 @@ class ToTorchImage(Operation):
                 if angles is None:
                     return inp
                 else:
-                    return (inp, angles)
+                    return (inp, angles, orig_images)
 
             # Otherwise, need to fill the allocated memory with the contiguous tensor
             dst[:inp.shape[0]] = inp.contiguous()
             if angles is None:
                 return dst[:inp.shape[0]]
             else:
-                return (dst[:inp.shape[0]], angles)
+                return (dst[:inp.shape[0]], angles, orig_images)
         return to_torch_image
 
     def declare_state_and_memory(self, previous_state: State) -> Tuple[State, Optional[AllocationQuery]]:
@@ -120,13 +122,15 @@ class NormalizeImage(Operation):
         def normalize_convert(images, result):
 
             angles = None
+            ret_img = None
             if isinstance(images, tuple):
+                ret_img = images[2]
                 angles = images[1]
                 images = images[0]
 
-            ret_img = None
-            if s.return_orig_img:
-                ret_img = images.clone()
+            # ret_img = None
+            # if s.return_orig_img:
+            #     ret_img = images.clone()
 
             B, C, H, W = images.shape
             table = self.lookup_table.view(-1)

@@ -29,13 +29,15 @@ class RandomRotate_Torch(Operation):
     module: torch.nn.Module
         The module for transformation
     """
-    def __init__(self, block_rotate: bool = False, p_flip_upright = 0, double_rotate = False, pre_flip = False):
+    def __init__(self, block_rotate: bool = False, p_flip_upright = 0, double_rotate = False, pre_flip = False,
+                 ret_orig_img = False):
         super().__init__()
         self.block_rotate = block_rotate
         self.angle_config = -1
         self.p_flip_upright = p_flip_upright
         self.double_rotate = double_rotate
         self.pre_flip = pre_flip
+        self.ret_orig_img = ret_orig_img
 
     def set_angle_config(self, angle_config: int = -1, p_flip_upright = 0):
         self.angle_config = angle_config
@@ -69,6 +71,10 @@ class RandomRotate_Torch(Operation):
         parallel_range = Compiler.get_iterator()
 
         def random_rotate_tensor(images, _, indices):
+
+            orig_imgs = None
+            if self.ret_orig_img:
+                orig_imgs = images.clone()
 
             if self.angle_config < 0:
                 angle = np.random.randint(0, 360, size=images.shape[0])
@@ -123,7 +129,7 @@ class RandomRotate_Torch(Operation):
             images = images.permute(0, 2, 3, 1)
             out_tensor = ch.Tensor(angle).type(ch.int32)
             out_tensor = out_tensor.to(images.device)
-            return images, out_tensor
+            return (images, out_tensor, orig_imgs)
 
         random_rotate_tensor.is_parallel = True
         random_rotate_tensor.with_indices = True

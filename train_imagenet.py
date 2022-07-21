@@ -153,7 +153,6 @@ Section('angleclassifier', 'distributed training options').params(
 
 Section('angle_testmode', 'configure how testing performed').params(
     standard=Param(int, 'individually evaluate class/upright/angle predictions', default=1),
-    corr_up=Param(int, 'evaluate angle corrected class prediction', default=0),
     corr_pred=Param(int, 'evaluate angle corrected class prediction', default=0),
 )
 
@@ -354,14 +353,15 @@ class ImageNetTrainer:
     @param('validation.p_flip_upright')
     @param('validation.double_rotate')
     @param('validation.pre_flip')
-    def create_val_loader(self, val_dataset, num_workers, batch_size,
-                          resolution, distributed, corner_mask, random_rotate, block_rotate, p_flip_upright, double_rotate, pre_flip):
+    @param('angle_testmode.corr_pred')
+    def create_val_loader(self, val_dataset, num_workers, batch_size, resolution, distributed, corner_mask,
+                          random_rotate, block_rotate, p_flip_upright, double_rotate, pre_flip, corr_pred):
         this_device = f'cuda:{self.gpu}'
         val_path = Path(val_dataset)
         assert val_path.is_file()
         res_tuple = (resolution, resolution)
         cropper = CenterCropRGBImageDecoder(res_tuple, ratio=DEFAULT_CROP_RATIO)
-        self.val_normalizer = NormalizeImage(IMAGENET_MEAN, IMAGENET_STD, np.float16, return_orig_img=True)
+        self.val_normalizer = NormalizeImage(IMAGENET_MEAN, IMAGENET_STD, np.float16)
         image_pipeline = [
             cropper,
             ToTensor(),
@@ -371,7 +371,7 @@ class ImageNetTrainer:
         ]
 
         if random_rotate:
-            image_pipeline.insert(3, RandomRotate_Torch(block_rotate, p_flip_upright, double_rotate, pre_flip))
+            image_pipeline.insert(3, RandomRotate_Torch(block_rotate, p_flip_upright, double_rotate, pre_flip, corr_pred))
 
         if corner_mask:
             if random_rotate:
@@ -725,12 +725,12 @@ class ImageNetTrainer:
     @param('angleclassifier.attach_ang_classifier')
     @param('angleclassifier.angle_binsize')
     @param('angle_testmode.standard')
-    @param('angle_testmode.corr_up')
     @param('angle_testmode.corr_pred')
-    def val_loop(self, loss_scope, attach_upright_classifier, attach_ang_classifier, angle_binsize, standard, corr_up,
-                 corr_pred):
+    def val_loop(self, loss_scope, attach_upright_classifier, attach_ang_classifier, angle_binsize, standard, corr_pred):
         model = self.model
         model.eval()
+
+        errs_mod_90 = None
 
         with ch.no_grad():
             with autocast():
@@ -741,9 +741,9 @@ class ImageNetTrainer:
                         angles = images[1][0]
                         if angles is not None:
                             angles = angles[:target.shape[0]]
-                        pre_norm_imgs = images[1][1]
-                        if pre_norm_imgs is not None:
-                            pre_norm_imgs = pre_norm_imgs[:target.shape[0]]
+                        orig_imgs = images[1][1]
+                        if orig_imgs is not None:
+                            orig_imgs = orig_imgs[:target.shape[0]]
 
                         target_up = target_ang = None
                         if attach_upright_classifier:
@@ -753,8 +753,19 @@ class ImageNetTrainer:
 
                         images = images[0]
 
+                    # pil_mode = False
+                    # if pil_mode:
+                    #     dtype = images.dtype
+                    #     images = orig_imgs.clone()
+                    #     images = images.permute(0,3,1,2)
+                    #     images = self.rotate_images(images, angles, PIL_mode = True)
+                    #     images = self.mask_corners(images)
+                    #     images = self.norm_images(images, dtype)
+
+
+                    output_cls, output_up, output_ang = self.model(images)
+
                     if standard:
-                        output_cls, output_up, output_ang = self.model(images)
                         if loss_scope == 0 or loss_scope == 2:
                             for k in ['top_1_class', 'top_5_class']:
                                 self.val_meters[k](output_cls, target)
@@ -780,31 +791,72 @@ class ImageNetTrainer:
                                 loss_ang = self.compute_angle_loss(output_up, output_ang, target_up, target_ang)
                                 self.val_meters['loss_angle'](loss_ang)
 
-                    # if corr_up:
-                    #     assert attach_upright_classifier
-                    #     assert len(output_up) == len(angle_binsize)
-                    #
-                    #     output_cls_corr_up = output_cls
-                    #     for k in ['top_1_class_corr_up', 'top_5_class_corr_up']:
-                    #         self.val_meters[k](output_cls_corr_up, target)
-
                     if corr_pred:
                         assert attach_ang_classifier
+
+                        corr_imgs = orig_imgs.clone()
+                        corr_imgs = corr_imgs.permute(0,3,1,2)
                         unrotate_ang = (360 - ch.argmax(output_ang, 1))
-                        for i in range(len(unrotate_ang)):
-                            pre_norm_imgs[i] = rotate(pre_norm_imgs[i], int(unrotate_ang[i]))
+                        # Unrotate -based off original image
+                        unrotate_from_orig = (angles + unrotate_ang)%360
 
-                        normed = self.norm_images(pre_norm_imgs, images.dtype)
+                        corr_imgs = self.rotate_images(corr_imgs, unrotate_from_orig)
+                        corr_imgs = self.mask_corners(corr_imgs)
+                        corr_imgs = self.norm_images(corr_imgs, images.dtype)
+                        output_cls_corr_pred, ouput_up_corr_pred, ouput_ang_corr_pred = self.model(corr_imgs)
 
-                        output_cls_corr_pred, _, _ = self.model(normed)
+                        refine_predictions = True
+                        if refine_predictions:
+                            refine_angles = [90, 180, 270]
+                            output_cls_corr_preds = [output_cls_corr_pred]
+                            ouput_up_corr_preds = [ouput_up_corr_pred]
+                            ouput_ang_corr_preds = [ouput_ang_corr_pred]
+                            uprights = [ch.argmax(ouput_up_corr_pred[1],1)]
+
+                            for i in range(len(refine_angles)):
+                                refine_imgs = orig_imgs.clone()
+                                refine_imgs = refine_imgs.permute(0, 3, 1, 2)
+
+                                refine_angle = unrotate_from_orig+refine_angles[i]%360
+
+                                refine_imgs = self.rotate_images(refine_imgs, refine_angle)
+                                refine_imgs = self.mask_corners(refine_imgs)
+                                refine_imgs = self.norm_images(refine_imgs, images.dtype)
+
+                                #not_upright = unrotate_from_orig[ch.argmax(ouput_up_corr_preds[i][1],1)==0]
+                                output_cls_corr_pred, ouput_up_corr_pred, ouput_ang_corr_pred = self.model(refine_imgs)
+                                output_cls_corr_preds.append(output_cls_corr_pred)
+                                ouput_up_corr_preds.append(ouput_up_corr_pred)
+                                ouput_ang_corr_preds.append(ouput_ang_corr_pred)
+                                uprights.append(ch.argmax(ouput_up_corr_pred[1],1))
+
+
+                            cls_preds = ch.stack(output_cls_corr_preds)
+
+                            # uprights = ch.stack(uprights)
+                            # no_upright = (sum(uprights,0)==0)
+                            # uprights[0, no_upright] = 1
+                            # uprights = ch.unsqueeze(uprights, -1)
+                            # cls_preds = uprights * cls_preds
+
+                            output_cls_corr_pred = ch.sum(cls_preds,0)
+
+                        # mod_90 = (angles + unrotate_ang) % 90
+                        # if errs_mod_90 is None:
+                        #     errs_mod_90 = ch.min(mod_90, ch.abs(mod_90-90))
+                        # else:
+                        #     errs_mod_90 = ch.cat((errs_mod_90, ch.min(mod_90, ch.abs(mod_90-90))))
 
                         for k in ['top_1_class_corr_pred', 'top_5_class_corr_pred']:
                             self.val_meters[k](output_cls_corr_pred, target)
+
 
         # stats = dict()
         # for k, m in self.val_meters.items():
         #     print(k)
         #     stats[k] = m.compute().item()
+        #print(ch.bincount(errs_mod_90))
+
         stats = {k: m.compute().item() for k, m in self.val_meters.items()}
         [meter.reset() for meter in self.val_meters.values()]
         return stats
@@ -817,8 +869,31 @@ class ImageNetTrainer:
         for i in range(3):
             normed[:, i, :, :] = table[pre_normed[:, i, :, :].view(-1).type(ch.long), i].reshape(
                 pre_normed[:, i, :, :].shape)
-
         return normed
+
+    def rotate_images(self, images, angles, PIL_mode = False):
+        if not PIL_mode:
+            for i in range(len(angles)):
+                images[i] = rotate(images[i], int(angles[i]))
+        else:
+            from PIL import Image
+            images_np = np.array(images.cpu()).transpose(0,2,3,1)
+            for i in range(len(angles)):
+                images_np[i] = np.array(Image.fromarray(images_np[i]).rotate(int(angles[i]), Image.Resampling.BICUBIC))
+                #Image.fromarray(images_np[i]).rotate(30, Image.Resampling.BICUBIC).show()
+            images_np = images_np.transpose(0,3,1,2)
+            images = ch.Tensor(images_np).to(self.gpu).type(images.dtype)
+        return images
+
+    def mask_corners(self, images):
+        images = images.permute(0, 2, 3, 1)
+        x = np.arange(0, images[0].shape[0], 1) - np.floor(images[0].shape[0] / 2)
+        y = np.arange(0, images[0].shape[1], 1) - np.floor(images[0].shape[1] / 2)
+        xx, yy = np.meshgrid(x, y)
+        mask = (np.sqrt((xx * xx) + (yy * yy)) - images[0].shape[0] / 2) > 0
+        images[:, mask, :] = 0
+        images = images.permute(0, 3, 1, 2)
+        return images
 
     @param('logging.folder')
     @param('logging.wandb_dryrun')
@@ -828,10 +903,9 @@ class ImageNetTrainer:
     @param('angleclassifier.attach_upright_classifier')
     @param('angleclassifier.attach_ang_classifier')
     @param('angleclassifier.angle_binsize')
-    @param('angle_testmode.corr_up')
     @param('angle_testmode.corr_pred')
     def initialize_logger(self, folder, wandb_dryrun, wandb_project, wandb_run, loss_scope, attach_upright_classifier,
-                          attach_ang_classifier, angle_binsize, corr_up, corr_pred):
+                          attach_ang_classifier, angle_binsize, corr_pred):
         self.val_meters = {}
 
         if loss_scope == 0 or loss_scope == 2:
@@ -850,10 +924,6 @@ class ImageNetTrainer:
                 # self.val_meters['top_1_within_binsize'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
 
             self.val_meters['loss_angle'] = MeanScalarMetric(compute_on_step=False).to(self.gpu)
-
-        # if corr_up:
-        #     self.val_meters['top_1_class_corr_up'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
-        #     self.val_meters['top_5_class_corr_up'] = torchmetrics.Accuracy(compute_on_step=False, top_k=5).to(self.gpu)
 
         if corr_pred:
             self.val_meters['top_1_class_corr_pred'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)

@@ -29,7 +29,7 @@ else:
 configs_dict["--data.num_workers"] = 12
 configs_dict["--data.in_memory"] = 1
 configs_dict["--logging.wandb_dryrun"] = 0
-configs_dict["--logging.wandb_project"] = "train_anglclass_fixed_pipeline"
+configs_dict["--logging.wandb_project"] = "train_anglclass_corr_pred"
 #configs_dict["--logging.wandb_run"] = ""
 
 
@@ -41,11 +41,13 @@ configs_dict["--lr.lr"] = 0.5
 configs_dict["--angleclassifier.attach_upright_classifier"] = 1
 configs_dict["--angleclassifier.attach_ang_classifier"] = 1
 configs_dict["--angleclassifier.classifier_upright"] = ['deep']
-configs_dict["--angleclassifier.classifier_ang"] = ['deep']
-#configs_dict["--angleclassifier.classifier_ang"] = ['deep', 'deepx2', 'deepslant']
-#configs_dict["--angleclassifier.angle_binsize"] = ['lr', 1, 4, 12, 45, 180]
+#configs_dict["--angleclassifier.classifier_ang"] = ['deep']
+configs_dict["--angleclassifier.classifier_ang"] = ['deep', 'deepx2', 'deepslant']
+configs_dict["--angleclassifier.angle_binsize"] = ['lr', 3]
 
 configs_dict["--angleclassifier.flatten"] = 'basic'
+
+configs_dict["--angle_testmode.corr_pred"] = [1]
 
 
 

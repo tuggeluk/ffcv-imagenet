@@ -32,17 +32,14 @@ class MaskCorners_Torch(Operation):
     def __init__(self):
         super().__init__()
 
-
-    def generate_code(self) -> Callable:
-        return self.generate_code()
-
-
     def generate_code(self) -> Callable:
 
-        def random_rotate_tensor(images, _, indices):
+        def mask_tensor(images, _, indices):
             # check for angles
             angles = None
+            orig_img = None
             if isinstance(images, tuple):
+                orig_img = images[2]
                 angles = images[1]
                 images = images[0]
             #generate mask
@@ -57,12 +54,12 @@ class MaskCorners_Torch(Operation):
 
 
             if angles is not None:
-                return (images, angles)
+                return (images, angles, orig_img)
             return images
 
-        random_rotate_tensor.is_parallel = True
-        random_rotate_tensor.with_indices = True
-        return random_rotate_tensor
+        mask_tensor.is_parallel = True
+        mask_tensor.with_indices = True
+        return mask_tensor
 
     def declare_state_and_memory(self, previous_state: State) -> Tuple[State, Optional[AllocationQuery]]:
         return previous_state, None
