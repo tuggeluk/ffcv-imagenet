@@ -537,7 +537,7 @@ class ImageNetTrainer:
             #         print(k)
         if freeze_base:
             model.freeze_base()
-            self.bn1 = model.base_model.bn1.running_mean
+            # self.bn1 = model.base_model.bn1.running_mean
 
         model = model.to(self.gpu)
 
