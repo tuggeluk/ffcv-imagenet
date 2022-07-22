@@ -32,10 +32,9 @@ training:
   use_blurpool: 1
   corner_mask: 1
   random_rotate: 1
-  checkpoint_interval: 10
+  checkpoint_interval: 5
   p_flip_upright: 0
 validation:
-  lr_tta: false
   resolution: 256
   batch_size: 256
   corner_mask: 1
