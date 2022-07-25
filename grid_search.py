@@ -50,7 +50,7 @@ configs_dict["--angleclassifier.attach_upright_classifier"] = 1
 configs_dict["--angleclassifier.attach_ang_classifier"] = 1
 configs_dict["--angleclassifier.classifier_upright"] = ['deep']
 #configs_dict["--angleclassifier.classifier_ang"] = ['deep']
-configs_dict["--angleclassifier.classifier_ang"] = ['deep', 'deepx2']
+configs_dict["--angleclassifier.classifier_ang"] = ['deep']
 
 
 configs_dict["--angleclassifier.flatten"] = 'basic'
@@ -60,7 +60,7 @@ configs_dict["--angle_testmode.corr_pred"] = [1]
 
 
 configs_dict["--data.in_memory"] = 1
-configs_dict["--training.epochs"] = 33
+configs_dict["--training.epochs"] = [5]
 
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):
