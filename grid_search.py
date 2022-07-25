@@ -13,7 +13,7 @@ if on_dgx:
     configs_dict["--data.train_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/train.ffcv"
     configs_dict["--data.val_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/val.ffcv"
     #configs_dict["--logging.folder"] = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
-    checkpoints_basedir = "logs"
+    checkpoints_basedir = "logs/BaseModels"
     logging_basedir = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
     run_name_prefix = ""
 else:
