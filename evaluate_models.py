@@ -340,7 +340,7 @@ class MultiModelEvaluator:
                 if rotate_runs == "nonRotate":
                     evaluator.rotate_transform.set_angle_config(angle_config=0)
                 elif rotate_runs == "rotate":
-                    evaluator.rotate_transform.set_angle_config(angle_config=1)
+                    evaluator.rotate_transform.set_angle_config(angle_config=-1)
 
 
                 #(Re-)initialize logger for new config
