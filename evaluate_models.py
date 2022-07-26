@@ -3,6 +3,7 @@ from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 import torch.nn.functional as F
 import torch.distributed as dist
+from collections import OrderedDict
 ch.backends.cudnn.benchmark = True
 ch.autograd.profiler.emit_nvtx(False)
 ch.autograd.profiler.profile(False)
@@ -28,13 +29,12 @@ from fastargs.validation import And, OneOf
 
 from ffcv.pipeline.operation import Operation
 from ffcv.loader import Loader, OrderOption
-from ffcv.transforms import ToTensor, ToDevice, Squeeze, NormalizeImage, \
-    RandomHorizontalFlip, ToTorchImage
+from ffcv.transforms import ToTensor, ToDevice, Squeeze, RandomHorizontalFlip
 from ffcv.fields.rgb_image import CenterCropRGBImageDecoder, \
     RandomResizedCropRGBImageDecoder
 from ffcv.fields.basics import IntDecoder
 from input_tranformations.mask_corners import MaskCorners
-from input_tranformations.rotate import RandomRotate
+from input_tranformations.own_ops import NormalizeImage, ToTorchImage
 from input_tranformations.rotate_torch import RandomRotate_Torch
 import wandb
 
@@ -70,7 +70,8 @@ Section('validation', 'Validation parameters stuff').params(
 Section('multi_validate', 'Multi valdiation parameters').params(
     models_folder=Param(str, 'Destination of pretrained Models', required=True),
     random_runs=Param(int, 'Number of runs with random angles to avg over', default=1),
-    degree_interval=Param(int, 'Step size evaluation angle', default=45)
+    degree_interval=Param(int, 'Step size evaluation angle', default=45),
+    add_nonrotate_run=Param(int, 'Additionally evaluate without rotating', default=0)
 )
 
 
@@ -107,7 +108,6 @@ class MultiModelEvaluator:
 
         self.val_loader = self.create_val_loader()
         self.model, self.scaler = self.create_model_and_scaler()
-
         self.loss = ch.nn.CrossEntropyLoss(label_smoothing=0.1)
 
 
@@ -200,6 +200,9 @@ class MultiModelEvaluator:
         with ch.no_grad():
             with autocast():
                 for images, target in tqdm(self.val_loader):
+                    if isinstance(images, tuple):
+                        images = tuple(x[:target.shape[0]] for x in images)
+                        images = images[0]
                     output = self.model(images)
 
                     for k in ['top_1', 'top_5']:
@@ -281,53 +284,78 @@ class MultiModelEvaluator:
 
     @param('multi_validate.random_runs')
     @param('multi_validate.degree_interval')
-    def evaluate_checkpoint(self, name, path, random_runs, degree_interval):
+    def evaluate_checkpoint(self, name, path, last_entry, random_runs, degree_interval):
         # load model weights
-        self.model.load_state_dict(ch.load(os.path.join(path, name)))
+        state_dict = ch.load(os.path.join(path, name))
+        state_dict_renamed = OrderedDict()
+        for k, v in state_dict.items():
+            # rename keys
+            kn = "module."+k[18:]
+            state_dict_renamed[kn] = state_dict[k]
+
+        self.model.load_state_dict(state_dict_renamed)
         # evaluate on random angles  n-times
         print("random_angles")
         collected_stats = None
-        self.rotate_transform.set_angle_config(-1)
         for i in range(random_runs):
             stats = self.val_loop()
             collected_stats = self.add_dicts(collected_stats, stats)
             self.log({name+"_randomAng_"+key: val for key, val in stats.items()})
         self.log({"random_average_"+ key: np.average(val) for key, val in collected_stats.items()})
 
-        collected_stats = None
-        for i in np.arange(0, 360, degree_interval):
-            self.rotate_transform.set_angle_config(i)
-            stats = self.val_loop()
-            collected_stats = self.add_dicts(collected_stats, stats)
-            stats["angle"] = int(i)
-            self.log({name + "_rotatingAng_" + key: val for key, val in stats.items()})
-        self.log({"rotating_average_" + key: np.average(val) for key, val in collected_stats.items()})
+        if last_entry:
+            collected_stats = None
+            for i in np.arange(0, 360, degree_interval):
+                self.rotate_transform.set_angle_config(i)
+                stats = self.val_loop()
+                collected_stats = self.add_dicts(collected_stats, stats)
+                stats["angle"] = int(i)
+                self.log({name + "_rotatingAng_" + key: val for key, val in stats.items()})
+            self.log({"rotating_average_" + key: np.average(val) for key, val in collected_stats.items()})
 
         return None
 
 
     @classmethod
     @param('multi_validate.models_folder')
+    @param('multi_validate.add_nonrotate_run')
     @param('logging.log_folder')
     @param('logging.wandb_project')
     @param('logging.wandb_run')
-    def evaluate_folder(cls, models_folder, log_folder, wandb_project, wandb_run):
+    def evaluate_folder(cls, models_folder, add_nonrotate_run, log_folder, wandb_project, wandb_run):
         evaluator = cls(gpu=0)
         # iterate trough config paths
         for config in os.listdir(models_folder):
-            #(Re-)initialize logger for new config
 
-            evaluator.initialize_logger(os.path.join(log_folder, config), wandb_project, wandb_run+"_"+config)
+            if "arch:" in config:
+                model_arch = config.split("arch:")[-1].split("__")[0]
+                evaluator.model, evaluator.scaler = evaluator.create_model_and_scaler(arch=model_arch)
 
-            config_path = os.path.join(models_folder, config)
-            checkpoints = evaluator.collect_checkpoints(config_path)
-            sorted_keys = list(checkpoints.keys())
-            list.sort(sorted_keys)
-            for key in sorted_keys:
-                evaluator.evaluate_checkpoint(checkpoints[key], config_path)
+            if add_nonrotate_run:
+                rotate_runs = ["nonRotate", "rotate"]
+            else:
+                rotate_runs = [""]
 
-        #evaluator.eval_and_log()
+            for rotate_run in rotate_runs:
+                if rotate_runs == "nonRotate":
+                    evaluator.rotate_transform.set_angle_config(angle_config=0)
+                elif rotate_runs == "rotate":
+                    evaluator.rotate_transform.set_angle_config(angle_config=1)
 
+
+                #(Re-)initialize logger for new config
+                evaluator.initialize_logger(os.path.join(log_folder, config),
+                                            wandb_project, wandb_run+"_"+config+"_"+rotate_run)
+
+                config_path = os.path.join(models_folder, config)
+                checkpoints = evaluator.collect_checkpoints(config_path)
+                sorted_keys = list(checkpoints.keys())
+                list.sort(sorted_keys)
+                for key in sorted_keys:
+                    last_entry = key == sorted_keys[-1]
+                    evaluator.evaluate_checkpoint(checkpoints[key], config_path, last_entry)
+
+            #evaluator.eval_and_log()
 
 # Utils
 class MeanScalarMetric(torchmetrics.Metric):

@@ -156,6 +156,14 @@ Section('angle_testmode', 'configure how testing performed').params(
     corr_pred=Param(int, 'evaluate angle corrected class prediction', default=0),
 )
 
+Section('eval_configs', 'evaluation of basemodels and angleclassifiers').params(
+    base_model=Param(int, 'evaluate on a series of base models', default=0),
+    angle_class=Param(int, 'evaluate on a series of base angle_classifiers', default=0),
+    models_dict=Param(str, 'dir of models to evaluate', default="BaseModels"),
+
+)
+
+
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406]) * 255
 IMAGENET_STD = np.array([0.229, 0.224, 0.225]) * 255
 DEFAULT_CROP_RATIO = 224/256
@@ -973,6 +981,21 @@ class ImageNetTrainer:
 
             wandb.log(content)
 
+    def evaluate_base_models(self):
+        # set up csv folder
+        # go through epochs, compute top1,top5 on rotate and no rotate
+        # final epoch also compute top1,top5 per angle
+        return None
+
+    def evaluate_angle_class(self):
+        # set up csv folder
+        # final epoch, compute top1, top5
+        return None
+
+    def make_clear_csv_folder(self):
+        return None
+
+
     @classmethod
     @param('training.distributed')
     @param('dist.world_size')
@@ -990,10 +1013,17 @@ class ImageNetTrainer:
     @classmethod
     @param('training.distributed')
     @param('training.eval_only')
-    def exec(cls, gpu, distributed, eval_only):
+    @param('eval_configs.base_model')
+    @param('eval_configs.angle_class')
+    def exec(cls, gpu, distributed, eval_only, base_model, angle_class):
         trainer = cls(gpu=gpu)
         if eval_only:
-            trainer.eval_and_log()
+            if base_model:
+                trainer.evaluate_base_models()
+            elif angle_class:
+                trainer.evaluate_angle_class()
+            else:
+                trainer.eval_and_log()
         else:
             trainer.train()
 
