@@ -357,7 +357,7 @@ class MultiModelEvaluator:
                 else:
                     #(Re-)initialize logger for new config
                     evaluator.initialize_logger(os.path.join(log_folder, config),
-                                                wandb_project,)
+                                                wandb_project, run_name)
 
                     config_path = os.path.join(models_folder, config)
                     checkpoints = evaluator.collect_checkpoints(config_path)
