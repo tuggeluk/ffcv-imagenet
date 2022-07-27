@@ -60,7 +60,7 @@ Section('logging', 'how to log stuff').params(
 )
 
 Section('validation', 'Validation parameters stuff').params(
-    batch_size=Param(int, 'The batch size for validation', default=512),
+    batch_size=Param(int, 'The batch size for validation', default=256),
     resolution=Param(int, 'final resized validation image size', default=224),
     corner_mask=Param(int, 'should mask corners at test time', default=0),
     random_rotate=Param(int, 'should random rotate at test time', default=0),
@@ -349,7 +349,7 @@ class MultiModelEvaluator:
                     evaluator.rotate_transform.set_angle_config(angle_config=0)
                     rotate = False
                 elif rotate_runs == "rotate":
-                    evaluator.rotate_transform.set_angle_config(angle_config=1)
+                    evaluator.rotate_transform.set_angle_config(angle_config=-1)
 
                 run_name = wandb_run+"_"+config+"_"+rotate_run
                 if run_name in previous_runs:
