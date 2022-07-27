@@ -111,6 +111,7 @@ class MultiModelEvaluator:
         self.loss = ch.nn.CrossEntropyLoss(label_smoothing=0.1)
 
 
+
     @param('data.val_dataset')
     @param('data.num_workers')
     @param('validation.batch_size')
@@ -241,11 +242,14 @@ class MultiModelEvaluator:
                 json.dump(params, handle)
 
             if not wandb_dryrun:
+                # check if run exists
+
                 self.wandb_run = wandb.init(project=wandb_project, name=wandb_run, reinit=True)
                 wandb_config_dict = {}
                 for k in self.all_params.content.keys():
                     wandb_config_dict[str(k)] = self.all_params.content[k]
                 wandb.config.update(wandb_config_dict)
+        return 1
 
     @param('logging.wandb_dryrun')
     def log(self, content, wandb_dryrun):
@@ -284,7 +288,7 @@ class MultiModelEvaluator:
 
     @param('multi_validate.random_runs')
     @param('multi_validate.degree_interval')
-    def evaluate_checkpoint(self, name, path, last_entry, random_runs, degree_interval):
+    def evaluate_checkpoint(self, name, path, last_entry, rotate, random_runs, degree_interval):
         # load model weights
         state_dict = ch.load(os.path.join(path, name))
         state_dict_renamed = OrderedDict()
@@ -303,7 +307,7 @@ class MultiModelEvaluator:
             self.log({name+"_randomAng_"+key: val for key, val in stats.items()})
         self.log({"random_average_"+ key: np.average(val) for key, val in collected_stats.items()})
 
-        if last_entry:
+        if last_entry and rotate:
             collected_stats = None
             for i in np.arange(0, 360, degree_interval):
                 self.rotate_transform.set_angle_config(i)
@@ -324,9 +328,12 @@ class MultiModelEvaluator:
     @param('logging.wandb_run')
     def evaluate_folder(cls, models_folder, add_nonrotate_run, log_folder, wandb_project, wandb_run):
         evaluator = cls(gpu=0)
+        evaluator.wandb_api = wandb.Api()
+        entity, project = "tuggeluk", wandb_project
+        runs = evaluator.wandb_api.runs(entity + "/" + project)
+        previous_runs = [run.name for run in runs]
         # iterate trough config paths
         for config in os.listdir(models_folder):
-
             if "arch:" in config:
                 model_arch = config.split("arch:")[-1].split("__")[0]
                 evaluator.model, evaluator.scaler = evaluator.create_model_and_scaler(arch=model_arch)
@@ -337,23 +344,28 @@ class MultiModelEvaluator:
                 rotate_runs = [""]
 
             for rotate_run in rotate_runs:
+                rotate = True
                 if rotate_runs == "nonRotate":
                     evaluator.rotate_transform.set_angle_config(angle_config=0)
+                    rotate = False
                 elif rotate_runs == "rotate":
                     evaluator.rotate_transform.set_angle_config(angle_config=1)
 
+                run_name = wandb_run+"_"+config+"_"+rotate_run
+                if run_name in previous_runs:
+                    print("skipping: "+run_name)
+                else:
+                    #(Re-)initialize logger for new config
+                    evaluator.initialize_logger(os.path.join(log_folder, config),
+                                                wandb_project,)
 
-                #(Re-)initialize logger for new config
-                evaluator.initialize_logger(os.path.join(log_folder, config),
-                                            wandb_project, wandb_run+"_"+config+"_"+rotate_run)
-
-                config_path = os.path.join(models_folder, config)
-                checkpoints = evaluator.collect_checkpoints(config_path)
-                sorted_keys = list(checkpoints.keys())
-                list.sort(sorted_keys)
-                for key in sorted_keys:
-                    last_entry = key == sorted_keys[-1]
-                    evaluator.evaluate_checkpoint(checkpoints[key], config_path, last_entry)
+                    config_path = os.path.join(models_folder, config)
+                    checkpoints = evaluator.collect_checkpoints(config_path)
+                    sorted_keys = list(checkpoints.keys())
+                    list.sort(sorted_keys)
+                    for key in sorted_keys:
+                        last_entry = key == sorted_keys[-1]
+                        evaluator.evaluate_checkpoint(checkpoints[key], config_path, last_entry, rotate)
 
             #evaluator.eval_and_log()
 
