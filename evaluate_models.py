@@ -203,8 +203,8 @@ class MultiModelEvaluator:
                 for images, target in tqdm(self.val_loader):
                     if isinstance(images, tuple):
                         images = tuple(x[:target.shape[0]] for x in images)
-                        images = images[0]
                         angles = images[1][0]
+                        images = images[0]
                         print(angles)
                     output = self.model(images)
 
