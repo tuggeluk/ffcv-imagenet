@@ -204,6 +204,7 @@ class MultiModelEvaluator:
                     if isinstance(images, tuple):
                         images = tuple(x[:target.shape[0]] for x in images)
                         images = images[0]
+                    print(target)
                     output = self.model(images)
 
                     for k in ['top_1', 'top_5']:
@@ -345,10 +346,10 @@ class MultiModelEvaluator:
 
             for rotate_run in rotate_runs:
                 rotate = True
-                if rotate_runs == "nonRotate":
+                if rotate_run == "nonRotate":
                     evaluator.rotate_transform.set_angle_config(angle_config=0)
                     rotate = False
-                elif rotate_runs == "rotate":
+                elif rotate_run == "rotate":
                     evaluator.rotate_transform.set_angle_config(angle_config=-1)
 
                 run_name = wandb_run+"_"+config+"_"+rotate_run

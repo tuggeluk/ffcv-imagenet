@@ -18,6 +18,6 @@ validation:
 multi_validate:
   models_folder: logs/BaseModels
   #models_folder: /home/tugg/Documents/rotation_module/ffcv-imagenet/logs/rn18_base_configs
-  random_runs: 5
-  degree_interval: 2
+  random_runs: 3
+  degree_interval: 8
   add_nonrotate_run: 1
