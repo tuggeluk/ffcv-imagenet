@@ -205,7 +205,7 @@ class MultiModelEvaluator:
                         images = tuple(x[:target.shape[0]] for x in images)
                         angles = images[1][0]
                         images = images[0]
-                        print(angles)
+
                     output = self.model(images)
 
                     for k in ['top_1', 'top_5']:
