@@ -105,9 +105,10 @@ Section('validation', 'Validation parameters stuff').params(
     lr_tta=Param(int, 'should do lr flipping/avging at test time', default=0),
     corner_mask=Param(int, 'should mask corners at test time', default=0),
     random_rotate=Param(int, 'should random rotate at test time', default=0),
-    p_flip_upright = Param(float, 'percentage of images to be upright', default=0),
-    double_rotate = Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
-    pre_flip = Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0)
+    p_flip_upright=Param(float, 'percentage of images to be upright', default=0),
+    double_rotate=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
+    pre_flip=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
+    late_resize=Param(int, 'resize after rotation, <0 means do nothing', default=-1)
 )
 
 Section('training', 'training hyper param stuff').params(
@@ -361,9 +362,10 @@ class ImageNetTrainer:
     @param('validation.p_flip_upright')
     @param('validation.double_rotate')
     @param('validation.pre_flip')
+    @param('validation.late_resize')
     @param('angle_testmode.corr_pred')
     def create_val_loader(self, val_dataset, num_workers, batch_size, resolution, distributed, corner_mask,
-                          random_rotate, block_rotate, p_flip_upright, double_rotate, pre_flip, corr_pred):
+                          random_rotate, block_rotate, p_flip_upright, double_rotate, pre_flip, late_resize, corr_pred):
         this_device = f'cuda:{self.gpu}'
         val_path = Path(val_dataset)
         assert val_path.is_file()
@@ -379,7 +381,8 @@ class ImageNetTrainer:
         ]
 
         if random_rotate:
-            image_pipeline.insert(3, RandomRotate_Torch(block_rotate, p_flip_upright, double_rotate, pre_flip, corr_pred))
+            image_pipeline.insert(3, RandomRotate_Torch(block_rotate, p_flip_upright, double_rotate, pre_flip, corr_pred,
+                                                        late_resize))
 
         if corner_mask:
             if random_rotate:

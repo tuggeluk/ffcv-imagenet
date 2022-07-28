@@ -1,5 +1,8 @@
 #!/bin/bash
 
+IMAGENET_DIR="/home/tugg/Documents/Datasets/val_origsize"
+WRITE_DIR="/home/tugg/Documents/Datasets/ffcvout"
+
 write_dataset () {
     write_path=$WRITE_DIR/${1}_${2}_${3}_${4}.ffcv
     echo "Writing ImageNet ${1} dataset to ${write_path}"
@@ -14,5 +17,5 @@ write_dataset () {
         --cfg.jpeg_quality=$4
 }
 
-write_dataset train $1 $2 $3
+#write_dataset train $1 $2 $3
 write_dataset val $1 $2 $3

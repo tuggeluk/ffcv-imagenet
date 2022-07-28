@@ -13,14 +13,15 @@ logging:
 model:
   arch: resnet18
 validation:
-  resolution: 256
+  batch_size: 128
+  resolution: 512
   corner_mask: 1
   random_rotate: 1
   double_rotate: 0
   p_flip_upright: 0
+  late_resize: -1
 angle_testmode:
   standard: 1
-  corr_up: 0
   corr_pred: 1
 angleclassifier:
   freeze_base: 1
@@ -28,7 +29,7 @@ angleclassifier:
   attach_ang_classifier: 1
   classifier_upright: deep
   classifier_ang: deep
-  angle_binsize: [lr, 1, 12, 45, 90, 180]
+  angle_binsize: [lr, 1]
   loss_scope: 2
 training:
   load_from: logs/rn18_load_from:_mask_norotate__classifier_upright:deep__classifier_ang:deep__/final_weights.pt

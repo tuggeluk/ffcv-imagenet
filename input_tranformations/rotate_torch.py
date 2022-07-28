@@ -17,7 +17,7 @@ from ffcv.writer import DatasetWriter
 from dataclasses import replace
 from numpy.random import permutation, rand
 from typing import Callable, Optional, Tuple
-from torchvision.transforms.functional import rotate, InterpolationMode
+from torchvision.transforms.functional import rotate, InterpolationMode, resize
 from ffcv.pipeline.compiler import Compiler
 
 
@@ -30,7 +30,7 @@ class RandomRotate_Torch(Operation):
         The module for transformation
     """
     def __init__(self, block_rotate: bool = False, p_flip_upright = 0, double_rotate = False, pre_flip = False,
-                 ret_orig_img = False):
+                 ret_orig_img = False, late_resize = -1):
         super().__init__()
         self.block_rotate = block_rotate
         self.angle_config = -1
@@ -38,6 +38,7 @@ class RandomRotate_Torch(Operation):
         self.double_rotate = double_rotate
         self.pre_flip = pre_flip
         self.ret_orig_img = ret_orig_img
+        self.late_resize = late_resize
 
     def set_angle_config(self, angle_config: int = -1, p_flip_upright = 0):
         self.angle_config = angle_config
@@ -124,7 +125,8 @@ class RandomRotate_Torch(Operation):
             for i in parallel_range(len(indices)):
                 images[i] = rotate(images[i], int(fin_angle[i]), interpolation=InterpolationMode.BILINEAR)
 
-
+            if self.late_resize > 0:
+               images = resize(images, interpolation=InterpolationMode.BICUBIC, size=self.late_resize, antialias=True)
 
             images = images.permute(0, 2, 3, 1)
             out_tensor = ch.Tensor(angle).type(ch.int32)
@@ -136,4 +138,8 @@ class RandomRotate_Torch(Operation):
         return random_rotate_tensor
 
     def declare_state_and_memory(self, previous_state: State) -> Tuple[State, Optional[AllocationQuery]]:
-        return previous_state, None
+        if self.late_resize > 0:
+            H, W, C = previous_state.shape
+            return replace(previous_state, shape=(self.late_resize, self.late_resize, C)), None
+        else:
+            return previous_state, None
