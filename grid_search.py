@@ -21,7 +21,7 @@ else:
     configs_dict["--data.train_dataset"] = "/home/ubuntu/ImageNet_ffcv/train.ffcv"
     configs_dict["--data.val_dataset"] = "/home/ubuntu/ImageNet_ffcv/val.ffcv"
     #configs_dict["--logging.folder"] = "/home/ubuntu/rotation_module/ffcv-imagenet/logs"
-    checkpoints_basedir = "logs/rn18_base_configs"
+    checkpoints_basedir = "logs/BaseModels"
     logging_basedir = "/home/ubuntu/rotation_module/ffcv-imagenet/logs"
     run_name_prefix = ""
 
