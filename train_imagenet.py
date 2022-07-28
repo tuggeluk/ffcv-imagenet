@@ -87,7 +87,7 @@ Section('lr', 'lr scheduling').params(
     step_length=Param(int, 'learning rate step length', default=30),
     lr_schedule_type=Param(OneOf(['step', 'cyclic']), default='cyclic'),
     lr=Param(float, 'learning rate', default=0.5),
-    lr_peak_epoch=Param(int, 'Epoch at which LR peaks', default=2),
+    lr_peak_epoch=Param(int, 'Epoch at which LR peaks', default=4),
 )
 
 Section('logging', 'how to log stuff').params(

@@ -62,7 +62,7 @@ configs_dict["--angleclassifier.shape_class_loss"] = [0]
 
 
 configs_dict["--data.in_memory"] = 1
-configs_dict["--training.epochs"] = [5]
+configs_dict["--training.epochs"] = [33]
 
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):
