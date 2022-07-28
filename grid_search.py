@@ -37,9 +37,14 @@ configs_dict["--logging.wandb_project"] = "train_angleclass_no_lossshape"
 #configs_dict["--training.load_from"] = ["_mask_norotate"]
 configs_dict["--angleclassifier.freeze_base"] = 1
 configs_dict["--lr.lr"] = 0.5
-configs_dict["--training.load_from"] = [
+configs_dict["--training.load_from"] = ["random_rotate:0__arch:efficientnet_b0__",
+"random_rotate:0__arch:efficientnet_b2__",
+"random_rotate:0__arch:efficientnet_b4__",
 "random_rotate:0__arch:resnet18__",
-"random_rotate:0__arch:resnet50__",]
+"random_rotate:0__arch:resnet50__",
+"random_rotate:0__arch:resnet152__",
+"random_rotate:0__arch:resnext50_32x4d__",
+"random_rotate:0__arch:resnext101_32x8d__"]
 
 configs_dict["--angleclassifier.attach_upright_classifier"] = 1
 configs_dict["--angleclassifier.attach_ang_classifier"] = 1
