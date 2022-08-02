@@ -6,7 +6,7 @@ data:
 logging:
   log_folder: logs/eval_base_models
   wandb_dryrun: 0
-  wandb_project: evaluate_final_base_models
+  wandb_project: evaluate_final_base_models_highres
   wandb_run: ""
 model:
   arch: resnet18
@@ -19,5 +19,5 @@ multi_validate:
   models_folder: logs/BaseModels
   #models_folder: /home/tugg/Documents/rotation_module/ffcv-imagenet/logs/rn18_base_configs
   random_runs: 3
-  degree_interval: 8
-  add_nonrotate_run: 1
+  degree_interval: 2
+  add_nonrotate_run: 0

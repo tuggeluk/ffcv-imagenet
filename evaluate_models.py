@@ -291,6 +291,9 @@ class MultiModelEvaluator:
     @param('multi_validate.random_runs')
     @param('multi_validate.degree_interval')
     def evaluate_checkpoint(self, name, path, last_entry, rotate, random_runs, degree_interval):
+        if not last_entry:
+            return
+
         # load model weights
         state_dict = ch.load(os.path.join(path, name))
         state_dict_renamed = OrderedDict()
