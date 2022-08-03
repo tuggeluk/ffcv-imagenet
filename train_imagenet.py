@@ -161,8 +161,9 @@ Section('eval_configs', 'evaluation of basemodels and angleclassifiers').params(
     base_model=Param(int, 'evaluate on a series of base models', default=0),
     angle_class=Param(int, 'evaluate on a series of base angle_classifiers', default=0),
     models_dict=Param(str, 'dir of models to evaluate', default="BaseModels"),
-
+    degree_interval=Param(int, 'Step size of eval angle', default=45),
 )
+
 
 
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406]) * 255
@@ -381,8 +382,9 @@ class ImageNetTrainer:
         ]
 
         if random_rotate:
-            image_pipeline.insert(3, RandomRotate_Torch(block_rotate, p_flip_upright, double_rotate, pre_flip, corr_pred,
-                                                        late_resize))
+            self.val_rotate_transform = RandomRotate_Torch(block_rotate, p_flip_upright, double_rotate, pre_flip, corr_pred,
+                                                        late_resize)
+            image_pipeline.insert(3, self.val_rotate_transform)
 
         if corner_mask:
             if random_rotate:
@@ -990,9 +992,13 @@ class ImageNetTrainer:
         # final epoch also compute top1,top5 per angle
         return None
 
-    def evaluate_angle_class(self):
+    @param('eval_configs.degree_interval')
+    def evaluate_angle_class(self, degree_interval):
         # set up csv folder
         # final epoch, compute top1, top5
+        for i in np.arange(0, 360, degree_interval):
+            self.val_rotate_transform.set_angle_config(i)
+            self.eval_and_log()
         return None
 
     def make_clear_csv_folder(self):

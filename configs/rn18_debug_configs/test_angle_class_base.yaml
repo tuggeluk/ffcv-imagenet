@@ -1,0 +1,39 @@
+data:
+  in_memory: 1
+  num_workers: 12
+dist:
+  world_size: 1
+logging:
+  folder: /tmp/
+  log_level: 1
+  wandb_dryrun: 0
+  wandb_project: evaluate_final_angle_class_highres
+  wandb_run: rn50_88_epoch_mask_rotate
+  wandb_batch_interval: 20
+model:
+  arch: resnet18
+validation:
+  batch_size: 128
+  resolution: 512
+  corner_mask: 1
+  random_rotate: 1
+  double_rotate: 0
+  p_flip_upright: 0
+  late_resize: -1
+angle_testmode:
+  standard: 1
+  corr_pred: 1
+angleclassifier:
+  freeze_base: 1
+  attach_upright_classifier: 1
+  attach_ang_classifier: 1
+  classifier_upright: deep
+  classifier_ang: deep
+  angle_binsize: [lr, 1]
+  loss_scope: 2
+training:
+  load_from: logs/rn18_load_from:_mask_norotate__classifier_upright:deep__classifier_ang:deep__/final_weights.pt
+  #load_from: logs/rn18_base_configs/rn18_88_epochs_mask_rotate.yaml/final_weights.pt
+  eval_only: 1
+eval_configs:
+  angle_class: 1
