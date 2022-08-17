@@ -32,7 +32,12 @@ def generate_avg_plot(runs_df, top_x):
     x = np.arange(0, 361, 360/len(runs_df[top_x].iloc[0]))/180*np.pi
     for load in load_froms:
             avg = get_avg_performance(runs_df, load, top_x)
-            ax1.plot(x, avg, label="train-rotation:"+load)
+            if load == '2':
+                label = "train-rotation:0 + angle-classifier"
+            else:
+                label = "train-rotation:"+load
+
+            ax1.plot(x, avg, label=label)
     ax1.set_title("Top 1 accuracy per rotation angle")
     # ax1.set_ylabel(top_x + ' accuracy')
     # ax1.set_xlabel('degree')
@@ -43,7 +48,7 @@ def generate_avg_plot(runs_df, top_x):
 
     pos = ax1.get_position()
     ax1.set_position([pos.x0, pos.y0, pos.width, pos.height])
-    ax1.legend(loc='lower center', bbox_to_anchor=(0.5, -0.2), ncol=2)
+    ax1.legend(loc='lower center', bbox_to_anchor=(0.5, -0.2), ncol=3)
 
     plt.show()
 
@@ -58,7 +63,7 @@ def main():
     entity, project = "tuggeluk", "evaluate_final_base_models_highres"
     runs = wandb_api.runs(entity + "/" + project)
 
-    restrict_arch = ["resnet18"]
+    restrict_arch = []
 
     construct_df = dict()
     for run in runs:
