@@ -28,6 +28,7 @@ def get_avg_performance(runs_df, load_from_rotate, rotate, top_x):
 def generate_avg_plot(runs_df, top_x):
     load_froms = ['0', '1']
     rotates = ['nonRotate', 'rotate']
+    rotates = ['nonRotate']
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     x = np.arange(5, 101, 5)

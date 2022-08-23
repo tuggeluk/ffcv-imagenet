@@ -30,6 +30,7 @@ def generate_avg_plot(runs_df, top_x):
     load_froms = runs_df.load_from_rotate.unique()
     fig, ax1 = plt.subplots(subplot_kw={'projection': 'polar'})
     x = np.arange(0, 361, 360/len(runs_df[top_x].iloc[0]))/180*np.pi
+    load_froms = ['0','1']
     for load in load_froms:
             avg = get_avg_performance(runs_df, load, top_x)
             if load == '2':
@@ -38,7 +39,7 @@ def generate_avg_plot(runs_df, top_x):
                 label = "train-rotation:"+load
 
             ax1.plot(x, avg, label=label)
-    ax1.set_title("Top 1 accuracy per rotation angle")
+    ax1.set_title("Top 1 accuracy per rotation angle, averaged across 8 CNN architectures")
     # ax1.set_ylabel(top_x + ' accuracy')
     # ax1.set_xlabel('degree')
     ax1.set_theta_direction(-1)
