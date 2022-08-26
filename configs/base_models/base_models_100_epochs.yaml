@@ -6,7 +6,7 @@ dist:
 logging:
   folder: /tmp/
 lr:
-  lr: 0.425
+  lr: 0.225
   lr_schedule_type: cyclic
 model:
   arch: resnet50
@@ -16,7 +16,7 @@ resolution:
   min_res: 160
   start_ramp: 65
 training:
-  batch_size: 256
+  batch_size: 128
   bn_wd: 0
   distributed: 1
   epochs: 100
