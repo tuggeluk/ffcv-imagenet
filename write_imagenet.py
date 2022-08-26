@@ -1,7 +1,7 @@
 from torch.utils.data import Subset
 from ffcv.writer import DatasetWriter
 from ffcv.fields import IntField, RGBImageField
-from torchvision.datasets import CIFAR10, ImageFolder
+from torchvision.datasets import CIFAR10, ImageFolder, StanfordCars
 
 from argparse import ArgumentParser
 from fastargs import Section, Param
@@ -10,7 +10,7 @@ from fastargs.decorators import param, section
 from fastargs import get_current_config
 
 Section('cfg', 'arguments to give the writer').params(
-    dataset=Param(And(str, OneOf(['cifar', 'imagenet'])), 'Which dataset to write', default='imagenet'),
+    dataset=Param(And(str, OneOf(['cifar', 'imagenet', 'stanfordcars'])), 'Which dataset to write', default='imagenet'),
     split=Param(And(str, OneOf(['train', 'val'])), 'Train or val set', required=True),
     data_dir=Param(str, 'Where to find the PyTorch dataset', required=True),
     write_path=Param(str, 'Where to write the new dataset', required=True),
@@ -38,7 +38,9 @@ Section('cfg', 'arguments to give the writer').params(
 def main(dataset, split, data_dir, write_path, max_resolution, num_workers,
          chunk_size, subset, jpeg_quality, write_mode,
          compress_probability):
-    if dataset == 'cifar':
+    if dataset == 'stanfordcars':
+        my_dataset = StanfordCars(root=data_dir, train=(split == 'train'), download=True)
+    elif dataset == 'cifar':
         my_dataset = CIFAR10(root=data_dir, train=(split == 'train'), download=True)
     elif dataset == 'imagenet':
         my_dataset = ImageFolder(root=data_dir)
