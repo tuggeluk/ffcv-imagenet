@@ -6,6 +6,8 @@ import torch.nn as nn
 from .base_angle_classifier import BaseAngleClassifier
 from torchvision.models.resnet import BasicBlock, Bottleneck, conv1x1
 from torchvision.models.efficientnet import EfficientNet
+from torchvision.models.vision_transformer import VisionTransformer
+
 
 class DeepAngleClassifier(BaseAngleClassifier):
 
@@ -20,7 +22,23 @@ class DeepAngleClassifier(BaseAngleClassifier):
         self.base_width = 64
         self.inplanes = 64
 
-        if isinstance(in_model, EfficientNet):
+
+        if isinstance(in_model, VisionTransformer):
+            if len(in_model.encoder.layers) == 24:
+                self.base_in = 64
+                self.extract_list = ["encoder_layer_0", "encoder_layer_7", "encoder_layer_15", "encoder_layer_23"]
+                self.in_sizes = [1024, ]*4
+                self.strides = [1, 1, 1, 1]
+
+            elif len(in_model.encoder.layers) == 12:
+                self.base_in = 64
+                self.extract_list = ["encoder_layer_0", "encoder_layer_3", "encoder_layer_7", "encoder_layer_11"]
+                self.in_sizes = [768, ]*4
+                self.strides = [1, 1, 1, 1]
+
+
+
+        elif isinstance(in_model, EfficientNet):
             self.base_in = in_model.features._modules['0']._modules['0'].out_channels
             self.extract_list = ['0', '2', '4', '6', '8']
             self.in_sizes = [self._get_recursive_last_size(in_model.features._modules['2']),

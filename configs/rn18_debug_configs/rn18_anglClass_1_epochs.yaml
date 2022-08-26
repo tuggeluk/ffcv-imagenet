@@ -15,7 +15,8 @@ lr:
   lr_peak_epoch: 2
   lr_schedule_type: cyclic
 model:
-  arch: resnet18
+  arch: vit_b_32
+  pretrained: 1
 resolution:
   end_ramp: 13
   max_res: 192

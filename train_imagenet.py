@@ -43,6 +43,7 @@ from rotation_module.fc_angle_classifier import FcAngleClassifier
 from rotation_module.fc2_angle_classifier import Fc2AngleClassifier
 from rotation_module.deep_angle_classifier import DeepAngleClassifier
 from torchvision.transforms.functional import rotate
+from rotation_module.vit_angle_classifier import VitAngleClassifier
 
 class Fastargs_List(Checker):
     def __init__(self, cast_to = str):
@@ -140,8 +141,8 @@ Section('angleclassifier', 'distributed training options').params(
     attach_upright_classifier=Param(int, 'should an uprightness classifier be added to the model?', default=1),
     attach_ang_classifier=Param(int, 'should an angle classifier be added to the model?', default=1),
 
-    classifier_upright=Param(str, 'which angle classifier should be used', default='deep'),
-    classifier_ang=Param(str, 'which angle classifier should be used', default='deep'),
+    classifier_upright=Param(str, 'which angle classifier should be used', default='vit'),
+    classifier_ang=Param(str, 'which angle classifier should be used', default='vit'),
 
     loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=1),
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
@@ -471,6 +472,8 @@ class ImageNetTrainer:
             ang_class = DeepAngleClassifier(base_model, num_out, layers=(2, 2, 2, 2), flatten=flatten)
         elif type == 'deepslant':
             ang_class = DeepAngleClassifier(base_model, num_out, layers=(1, 2, 2, 3), flatten=flatten)
+        elif type == 'vit':
+            ang_class = VitAngleClassifier(base_model, num_out)
         else:
             raise ValueError("Unknown angleclassifier: " + type)
         return ang_class

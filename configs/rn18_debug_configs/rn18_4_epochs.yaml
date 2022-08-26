@@ -16,11 +16,12 @@ lr:
   lr_peak_epoch: 2
   lr_schedule_type: cyclic
 model:
-  arch: efficientnet_b0
+  arch: vit_l_32
+  pretrained: 1
 resolution:
   end_ramp: 13
-  max_res: 192
-  min_res: 160
+  max_res: 224
+  min_res: 224
   start_ramp: 11
 training:
   batch_size: 26
