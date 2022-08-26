@@ -11,7 +11,7 @@ from fastargs import get_current_config
 
 Section('cfg', 'arguments to give the writer').params(
     dataset=Param(And(str, OneOf(['cifar', 'imagenet', 'stanfordcars'])), 'Which dataset to write', default='imagenet'),
-    split=Param(And(str, OneOf(['train', 'val'])), 'Train or val set', required=True),
+    split=Param(And(str, OneOf(['train', 'val', 'test'])), 'Train or val set', required=True),
     data_dir=Param(str, 'Where to find the PyTorch dataset', required=True),
     write_path=Param(str, 'Where to write the new dataset', required=True),
     write_mode=Param(str, 'Mode: raw, smart or jpg', required=False, default='smart'),
@@ -39,7 +39,7 @@ def main(dataset, split, data_dir, write_path, max_resolution, num_workers,
          chunk_size, subset, jpeg_quality, write_mode,
          compress_probability):
     if dataset == 'stanfordcars':
-        my_dataset = StanfordCars(root=data_dir, train=(split == 'train'), download=True)
+        my_dataset = StanfordCars(root=data_dir, split=split, download=True)
     elif dataset == 'cifar':
         my_dataset = CIFAR10(root=data_dir, train=(split == 'train'), download=True)
     elif dataset == 'imagenet':

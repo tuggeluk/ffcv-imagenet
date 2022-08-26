@@ -80,7 +80,8 @@ Section('data', 'data related stuff').params(
     train_dataset=Param(str, '.dat file to use for training', required=True),
     val_dataset=Param(str, '.dat file to use for validation', required=True),
     num_workers=Param(int, 'The number of workers', required=True),
-    in_memory=Param(int, 'does the dataset fit in memory? (1/0)', required=True)
+    in_memory=Param(int, 'does the dataset fit in memory? (1/0)', required=True),
+    dataset=Param(OneOf(['ImageNet', 'StanfordCars']), '.dat file to use for training', default='ImageNet')
 )
 
 Section('lr', 'lr scheduling').params(
@@ -141,8 +142,8 @@ Section('angleclassifier', 'distributed training options').params(
     attach_upright_classifier=Param(int, 'should an uprightness classifier be added to the model?', default=1),
     attach_ang_classifier=Param(int, 'should an angle classifier be added to the model?', default=1),
 
-    classifier_upright=Param(str, 'which angle classifier should be used', default='vit'),
-    classifier_ang=Param(str, 'which angle classifier should be used', default='vit'),
+    classifier_upright=Param(str, 'which angle classifier should be used', default='deep'),
+    classifier_ang=Param(str, 'which angle classifier should be used', default='deep'),
 
     loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=1),
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
@@ -492,11 +493,18 @@ class ImageNetTrainer:
     @param('angleclassifier.classifier_upright')
     @param('angleclassifier.classifier_ang')
     @param('angleclassifier.angle_binsize')
+    @param('data.dataset')
     def create_model_and_scaler(self, arch, pretrained, distributed, use_blurpool, load_from, eval_only, freeze_base,
                                 loss_scope, flatten, attach_upright_classifier, attach_ang_classifier, classifier_upright,
-                                classifier_ang, angle_binsize):
+                                classifier_ang, angle_binsize, dataset):
         scaler = GradScaler()
-        model = getattr(models, arch)(pretrained=pretrained)
+
+        if dataset == 'ImageNet':
+            n_cls = 1000
+        elif dataset == 'StanfordCars':
+            n_cls = 196
+
+        model = getattr(models, arch)(pretrained=pretrained, num_classes=n_cls)
         def apply_blurpool(mod: ch.nn.Module):
             for (name, child) in mod.named_children():
                 if isinstance(child, ch.nn.Conv2d) and (np.max(child.stride) > 1 and child.in_channels >= 16): 
