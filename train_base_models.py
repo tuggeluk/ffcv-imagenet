@@ -18,7 +18,7 @@ else:
     configs_dict["--config-file"] = "configs/base_models/base_models_100_epochs.yaml"
     configs_dict["--data.train_dataset"] = "/home/ubuntu/Stanford_ffcv/train.ffcv"
     configs_dict["--data.val_dataset"] = "/home/ubuntu/Stanford_ffcv/val.ffcv"
-    logging_basedir = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs/base_models_stanfordcars"
+    logging_basedir = "/home/ubuntu/ffcv-imagenet/logs/base_models_stanfordcars"
     run_name_prefix = ""
 
 
