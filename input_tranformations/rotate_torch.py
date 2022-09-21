@@ -30,7 +30,7 @@ class RandomRotate_Torch(Operation):
         The module for transformation
     """
     def __init__(self, block_rotate: bool = False, p_flip_upright = 0, double_rotate = False, pre_flip = False,
-                 ret_orig_img = False, late_resize = -1):
+                 ret_orig_img = False, late_resize = -1, load_noise = 0):
         super().__init__()
         self.block_rotate = block_rotate
         self.angle_config = -1
@@ -39,6 +39,7 @@ class RandomRotate_Torch(Operation):
         self.pre_flip = pre_flip
         self.ret_orig_img = ret_orig_img
         self.late_resize = late_resize
+        self.load_noise = load_noise
 
     def set_angle_config(self, angle_config: int = -1, p_flip_upright = 0):
         self.angle_config = angle_config
@@ -77,6 +78,9 @@ class RandomRotate_Torch(Operation):
             if self.ret_orig_img:
                 orig_imgs = images.clone()
 
+
+
+
             if self.angle_config < 0:
                 angle = np.random.randint(0, 360, size=images.shape[0])
                 if self.p_flip_upright > 0:
@@ -85,6 +89,12 @@ class RandomRotate_Torch(Operation):
             else:
                 angle = np.ones(images.shape[0]) * self.angle_config
 
+            if self.load_noise == 1:
+                # store random noise in images
+                print("dsf")
+            if self.load_noise == 2:
+                # store random solid colors in images
+                print("dsf")
             # print("print")
             #
             # Image.fromarray(np.array(images[1].permute(1, 2, 0).cpu())).show()

@@ -110,7 +110,8 @@ Section('validation', 'Validation parameters stuff').params(
     p_flip_upright=Param(float, 'percentage of images to be upright', default=0),
     double_rotate=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
     pre_flip=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
-    late_resize=Param(int, 'resize after rotation, <0 means do nothing', default=-1)
+    late_resize=Param(int, 'resize after rotation, <0 means do nothing', default=-1),
+    load_noise=Param(int, '0: no effect, 1:load random noise instead of images, 2: load blank colors', default=0)
 )
 
 Section('training', 'training hyper param stuff').params(
@@ -129,7 +130,8 @@ Section('training', 'training hyper param stuff').params(
     block_rotate=Param(int, 'should the whole tensor be rotated at once', default=0),
     p_flip_upright=Param(float, 'percentage of images to be upright', default=0),
     load_from=Param(str, 'path of pretrained weights', default=""),
-    double_rotate = Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0)
+    double_rotate=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
+    load_noise=Param(int, '0: no effect, 1:load random noise instead of images, 2: load blank colors', default=0)
 )
 
 Section('dist', 'distributed training options').params(
@@ -306,8 +308,9 @@ class ImageNetTrainer:
     @param('training.random_rotate')
     @param('training.block_rotate')
     @param('training.p_flip_upright')
+    @param('training.load_noise')
     def create_train_loader(self, train_dataset, num_workers, batch_size,
-                            distributed, in_memory, corner_mask, random_rotate, block_rotate, p_flip_upright):
+                            distributed, in_memory, corner_mask, random_rotate, block_rotate, p_flip_upright, load_noise):
         this_device = f'cuda:{self.gpu}'
         train_path = Path(train_dataset)
         assert train_path.is_file()
@@ -323,7 +326,7 @@ class ImageNetTrainer:
         ]
 
         if random_rotate:
-            image_pipeline.insert(3, RandomRotate_Torch(block_rotate, p_flip_upright))
+            image_pipeline.insert(3, RandomRotate_Torch(block_rotate, p_flip_upright, load_noise=load_noise))
 
         if corner_mask:
             if random_rotate:
@@ -367,6 +370,7 @@ class ImageNetTrainer:
     @param('validation.pre_flip')
     @param('validation.late_resize')
     @param('angle_testmode.corr_pred')
+    @param('validation.load_noise')
     def create_val_loader(self, val_dataset, num_workers, batch_size, resolution, distributed, corner_mask,
                           random_rotate, block_rotate, p_flip_upright, double_rotate, pre_flip, late_resize, corr_pred):
         this_device = f'cuda:{self.gpu}'
@@ -385,7 +389,7 @@ class ImageNetTrainer:
 
         if random_rotate:
             self.val_rotate_transform = RandomRotate_Torch(block_rotate, p_flip_upright, double_rotate, pre_flip, corr_pred,
-                                                        late_resize)
+                                                        late_resize, load_noise)
             image_pipeline.insert(3, self.val_rotate_transform)
 
         if corner_mask:
