@@ -91,10 +91,11 @@ class RandomRotate_Torch(Operation):
 
             if self.load_noise == 1:
                 # store random noise in images
-                print("dsf")
+                images = (ch.rand(images.shape) * 255).type(ch.uint8).to(images.device)
             if self.load_noise == 2:
                 # store random solid colors in images
-                print("dsf")
+                base_colors = (ch.rand((images.shape[-0], 1, 1, images.shape[-1])) * 255).type(ch.uint8)
+                images[:] = base_colors[:]
             # print("print")
             #
             # Image.fromarray(np.array(images[1].permute(1, 2, 0).cpu())).show()

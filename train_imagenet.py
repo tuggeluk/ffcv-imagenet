@@ -111,7 +111,7 @@ Section('validation', 'Validation parameters stuff').params(
     double_rotate=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
     pre_flip=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
     late_resize=Param(int, 'resize after rotation, <0 means do nothing', default=-1),
-    load_noise=Param(int, '0: no effect, 1:load random noise instead of images, 2: load blank colors', default=0)
+    load_noise=Param(int, '0: no effect, 1:load random noise instead of images, 2: load blank colors', default=1)
 )
 
 Section('training', 'training hyper param stuff').params(
@@ -131,7 +131,7 @@ Section('training', 'training hyper param stuff').params(
     p_flip_upright=Param(float, 'percentage of images to be upright', default=0),
     load_from=Param(str, 'path of pretrained weights', default=""),
     double_rotate=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
-    load_noise=Param(int, '0: no effect, 1:load random noise instead of images, 2: load blank colors', default=0)
+    load_noise=Param(int, '0: no effect, 1:load random noise instead of images, 2: load blank colors', default=1)
 )
 
 Section('dist', 'distributed training options').params(
@@ -372,7 +372,8 @@ class ImageNetTrainer:
     @param('angle_testmode.corr_pred')
     @param('validation.load_noise')
     def create_val_loader(self, val_dataset, num_workers, batch_size, resolution, distributed, corner_mask,
-                          random_rotate, block_rotate, p_flip_upright, double_rotate, pre_flip, late_resize, corr_pred):
+                          random_rotate, block_rotate, p_flip_upright, double_rotate, pre_flip, late_resize, corr_pred,
+                          load_noise):
         this_device = f'cuda:{self.gpu}'
         val_path = Path(val_dataset)
         assert val_path.is_file()
@@ -389,7 +390,7 @@ class ImageNetTrainer:
 
         if random_rotate:
             self.val_rotate_transform = RandomRotate_Torch(block_rotate, p_flip_upright, double_rotate, pre_flip, corr_pred,
-                                                        late_resize, load_noise)
+                                                        late_resize, load_noise=load_noise)
             image_pipeline.insert(3, self.val_rotate_transform)
 
         if corner_mask:

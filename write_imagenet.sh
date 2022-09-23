@@ -1,6 +1,6 @@
 #!/bin/bash
 
-IMAGENET_DIR="/home/tugg/Documents/Datasets/val_origsize"
+IMAGENET_DIR="/home/tugg/Documents/Datasets/ImageNet"
 WRITE_DIR="/home/tugg/Documents/Datasets/ffcvout"
 
 write_dataset () {
@@ -17,5 +17,5 @@ write_dataset () {
         --cfg.jpeg_quality=$4
 }
 
-#write_dataset train $1 $2 $3
-write_dataset val $1 $2 $3
+write_dataset train $1 $2 $3
+#write_dataset val $1 $2 $3
