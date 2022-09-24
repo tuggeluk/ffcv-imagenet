@@ -424,6 +424,8 @@ class ImageNetTrainer:
     @param('training.checkpoint_interval')
     @param('logging.wandb_dryrun')
     def train(self, epochs, log_level, checkpoint_interval, wandb_dryrun):
+        self.eval_and_log({'epoch':(-1)})
+
         for epoch in range(epochs):
             start_train = time.time()
             res = self.get_resolution(epoch)
