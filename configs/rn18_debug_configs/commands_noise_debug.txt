@@ -1,10 +1,27 @@
-/home/ubuntu/ffcv-imagenet/train_imagenet.py --config-file=configs/angleclass_configs/rn18_angleclass_base.yaml
---data.train_dataset=/home/ubuntu/ImageNet_ffcv/train.ffcv --data.val_dataset=/home/ubuntu/ImageNet_ffcv/val.ffcv
---data.num_workers=12 --data.in_memory=1 --logging.wandb_dryrun=0 --logging.wandb_project=debug_noise
---angleclassifier.freeze_base=1 --lr.lr=0.5
---training.load_from=logs/BaseModels/random_rotate:0__arch:resnet18__/final_weights.pt --model.arch=resnet18
---angleclassifier.attach_upright_classifier=1 --angleclassifier.attach_ang_classifier=1
---angleclassifier.classifier_upright=deep --angleclassifier.classifier_ang=deep --angleclassifier.flatten=basic
---angle_testmode.corr_pred=1 --angleclassifier.shape_class_loss=0 --training.epochs=5
---logging.folder=/home/ubuntu/rotation_module/ffcv-imagenet/logs/debug_noise
---logging.wandb_run=debug_noise
+/home/ubuntu/ffcv-imagenet/train_imagenet.py --config-file=configs/angleclass_configs/rn18_angleclass_base.yaml \\
+--data.train_dataset=/home/ubuntu/ImageNet_ffcv/train.ffcv --data.val_dataset=/home/ubuntu/ImageNet_ffcv/val.ffcv \\
+--data.num_workers=12 --data.in_memory=1 --logging.wandb_dryrun=0 --logging.wandb_project=debug_noise \\
+--angleclassifier.freeze_base=1 --lr.lr=0.5 \\
+--training.load_from=logs/BaseModels/random_rotate:0__arch:resnet18__/final_weights.pt --model.arch=resnet18 \\
+--angleclassifier.attach_upright_classifier=1 --angleclassifier.attach_ang_classifier=1 \\
+--angleclassifier.classifier_upright=deep --angleclassifier.classifier_ang=deep --angleclassifier.flatten=basic \\
+--angle_testmode.corr_pred=1 --angleclassifier.shape_class_loss=0 --training.epochs=5 \\
+--logging.folder=/home/ubuntu/rotation_module/ffcv-imagenet/logs/debug_noise \\
+--logging.wandb_run=debug_noise \\
+--validation.load_noise=1 \\
+--training.load_noise=1
+
+
+python train_imagenet.py --config-file=configs/angleclass_configs/rn18_angleclass_base.yaml \
+--data.train_dataset=/cluster/data/tugg/ImageNet_ffcv/val.ffcv --data.val_dataset=/cluster/data/tugg/ImageNet_ffcv/val.ffcv \
+--data.num_workers=20 --data.in_memory=1 --logging.wandb_dryrun=0 --logging.wandb_project=debug_noise \
+--angleclassifier.freeze_base=1 --lr.lr=0.5 \
+--training.load_from=logs/BaseModels/random_rotate:0__arch:resnet18__/final_weights.pt --model.arch=resnet18 \
+--angleclassifier.attach_upright_classifier=1 --angleclassifier.attach_ang_classifier=1 \
+--angleclassifier.classifier_upright=deep --angleclassifier.classifier_ang=deep --angleclassifier.flatten=basic \
+--angle_testmode.corr_pred=1 --angleclassifier.shape_class_loss=0 --training.epochs=5 \
+--logging.folder=logs/debug_noise \
+--logging.wandb_run=debug_noise_dgx \
+--validation.load_noise=1 \
+--training.load_noise=1 \
+--dist.world_size=2

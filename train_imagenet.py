@@ -441,8 +441,8 @@ class ImageNetTrainer:
                     'epoch': epoch,
                     'train_time': train_epoch_time
                 }
-                if epoch%20 ==0:
-                    self.eval_and_log(extra_dict)
+
+                self.eval_and_log(extra_dict)
 
             if checkpoint_interval > 0 and (epoch+1) % checkpoint_interval == 0 and self.gpu == 0:
                 ch.save(self.model.state_dict(), self.log_folder / ('epoch_'+str(epoch+1)+'_weights.pt'))
