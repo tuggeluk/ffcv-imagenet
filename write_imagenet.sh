@@ -1,7 +1,7 @@
 #!/bin/bash
 
 IMAGENET_DIR="/home/tugg/Documents/Datasets/ImageNet"
-WRITE_DIR="/home/tugg/Documents/Datasets/ffcvout"
+WRITE_DIR="/media/tugg/sg_bak/Data_Archives/ImageNet_ffcv"
 
 write_dataset () {
     write_path=$WRITE_DIR/${1}_${2}_${3}_${4}.ffcv
