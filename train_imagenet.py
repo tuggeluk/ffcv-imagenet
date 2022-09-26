@@ -139,7 +139,7 @@ Section('training', 'training hyper param stuff').params(
 Section('dist', 'distributed training options').params(
     world_size=Param(int, 'number gpus', default=1),
     address=Param(str, 'address', default='localhost'),
-    port=Param(str, 'port', default='12356')
+    port=Param(str, 'port', default='12252')
 )
 
 Section('angleclassifier', 'distributed training options').params(
