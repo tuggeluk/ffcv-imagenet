@@ -151,7 +151,7 @@ Section('angleclassifier', 'distributed training options').params(
 
     loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=1),
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
-    angle_binsize=Param(Fastargs_List(), 'angle width lumped into one class', default=['lr', 3]),
+    angle_binsize=Param(Fastargs_List(), 'angle width lumped into one class', default=['lr', 3, 5, 10, 30, ]),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
     prio_angle=Param(float, 'should we use regression for the angle', default=1),
     flatten=Param(And(str, OneOf(['basic', 'extended'])), 'flatten with avg pool (1,1) or (5,5)', default='basic'),
@@ -803,12 +803,12 @@ class ImageNetTrainer:
                     output_cls, output_up, output_ang = self.model(images)
 
                     if standard:
-                        if loss_scope == 0 or loss_scope == 2:
-                            for k in ['top_1_class', 'top_5_class']:
-                                self.val_meters[k](output_cls, target)
+                        #if loss_scope == 0 or loss_scope == 2:
+                        for k in ['top_1_class', 'top_5_class']:
+                            self.val_meters[k](output_cls, target)
 
-                            loss_val = self.loss(output_cls, target)
-                            self.val_meters['loss_class'](loss_val)
+                        loss_val = self.loss(output_cls, target)
+                        self.val_meters['loss_class'](loss_val)
 
                         #print("val loss clss: " + str(self.loss(output_cls, target)))
 

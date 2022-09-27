@@ -15,7 +15,7 @@ if on_dgx:
     #configs_dict["--logging.folder"] = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
     checkpoints_basedir = "logs/BaseModels"
     logging_basedir = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
-    run_name_prefix = "angleclass_"
+    run_name_prefix = "upclass_"
 else:
     configs_dict["--config-file"] = "configs/angleclass_configs/rn18_angleclass_base.yaml"
     configs_dict["--data.train_dataset"] = "/home/ubuntu/ImageNet_ffcv/train.ffcv"
@@ -23,7 +23,7 @@ else:
     #configs_dict["--logging.folder"] = "/home/ubuntu/rotation_module/ffcv-imagenet/logs"
     checkpoints_basedir = "logs/BaseModels"
     logging_basedir = "/home/ubuntu/rotation_module/ffcv-imagenet/logs"
-    run_name_prefix = "angleclass_"
+    run_name_prefix = "upclass_"
 
 
 configs_dict["--data.num_workers"] = 12
@@ -41,17 +41,17 @@ configs_dict["--training.load_from"] = [
 "random_rotate:0__arch:resnet152__"
 ]
 
-configs_dict["--angleclassifier.attach_upright_classifier"] = 0
-configs_dict["--angleclassifier.attach_ang_classifier"] = [1]
+configs_dict["--angleclassifier.attach_upright_classifier"] = [1]
+configs_dict["--angleclassifier.attach_ang_classifier"] = 0
 configs_dict["--angleclassifier.classifier_upright"] = 'deep'
 #configs_dict["--angleclassifier.classifier_ang"] = ['deep']
 configs_dict["--angleclassifier.classifier_ang"] = 'deep'
 
 
-configs_dict["--angleclassifier.flatten"] = ['basic', 'extended']
+configs_dict["--angleclassifier.flatten"] = 'basic'
 
 configs_dict["--angle_testmode.corr_pred"] = 1
-configs_dict["--angleclassifier.shape_class_loss"] = [0, 1]
+configs_dict["--angleclassifier.shape_class_loss"] = 0
 
 configs_dict["--data.in_memory"] = 1
 configs_dict["--training.epochs"] = 3
@@ -61,6 +61,8 @@ configs_dict["--training.interpolation"] = [2]
 configs_dict["--training.double_rotate"] = 1
 configs_dict["--validation.double_rotate"] = 1
 
+configs_dict["--training.p_flip_upright"] = 0.5
+configs_dict["--validation.p_flip_upright"] = 0.5
 
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):
