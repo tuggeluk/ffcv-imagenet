@@ -89,7 +89,7 @@ class DeepAngleClassifier(BaseAngleClassifier):
             if isinstance(out_channels, list):
                 self.fcs =  nn.ModuleList()
                 for out_chan in out_channels:
-                    self.fcs.append(ch.nn.Linear(depths[-1], out_chan))
+                    self.fcs.append(ch.nn.Linear(depths[-1]*25, out_chan))
                 self.multi_out = True
             else:
                 self.fc = ch.nn.Linear(depths[-1]*25, out_channels)

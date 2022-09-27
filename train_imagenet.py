@@ -151,10 +151,10 @@ Section('angleclassifier', 'distributed training options').params(
 
     loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=1),
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
-    angle_binsize=Param(Fastargs_List(), 'angle width lumped into one class', default=['lr', 3, 5, 10, 30, ]),
+    angle_binsize=Param(Fastargs_List(), 'angle width lumped into one class', default=['lr', 3 ]),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
     prio_angle=Param(float, 'should we use regression for the angle', default=1),
-    flatten=Param(And(str, OneOf(['basic', 'extended'])), 'flatten with avg pool (1,1) or (5,5)', default='basic'),
+    flatten=Param(And(str, OneOf(['basic', 'extended'])), 'flatten with avg pool (1,1) or (5,5)', default='extended'),
     shape_class_loss=Param(int, 'perform loss shaping on the angle classifier', default=1)
 )
 
