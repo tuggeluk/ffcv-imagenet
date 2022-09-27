@@ -945,7 +945,7 @@ class ImageNetTrainer:
                           attach_ang_classifier, angle_binsize, corr_pred):
         self.val_meters = {}
 
-        if loss_scope == 0 or loss_scope == 2:
+        if loss_scope == 0 or loss_scope == 2 or True:
             self.val_meters['top_1_class'] = torchmetrics.Accuracy(compute_on_step=False).to(self.gpu)
             self.val_meters['top_5_class'] = torchmetrics.Accuracy(compute_on_step=False, top_k=5).to(self.gpu)
             self.val_meters['loss_class'] = MeanScalarMetric(compute_on_step=False).to(self.gpu)
