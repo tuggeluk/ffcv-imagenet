@@ -48,9 +48,9 @@ configs_dict["--angleclassifier.classifier_upright"] = 'deep'
 configs_dict["--angleclassifier.classifier_ang"] = 'deep'
 
 
-configs_dict["--angleclassifier.flatten"] = 'basic'
+configs_dict["--angleclassifier.flatten"] = ['basic', 'extended']
 
-configs_dict["--angle_testmode.corr_pred"] = 1
+configs_dict["--angle_testmode.corr_pred"] = 0
 configs_dict["--angleclassifier.shape_class_loss"] = 0
 
 configs_dict["--data.in_memory"] = 1
