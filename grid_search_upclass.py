@@ -35,7 +35,7 @@ configs_dict["--logging.wandb_project"] = "debug_angleclass_rotations"
 
 
 #configs_dict["--training.load_from"] = ["_mask_norotate"]
-configs_dict["--angleclassifier.freeze_base"] = 0
+configs_dict["--angleclassifier.freeze_base"] = 1
 configs_dict["--lr.lr"] = 0.5
 configs_dict["--training.load_from"] = [
 "random_rotate:0__arch:resnet50__"
