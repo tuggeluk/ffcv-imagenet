@@ -61,6 +61,10 @@ configs_dict["--training.interpolation"] = [2]
 configs_dict["--training.double_rotate"] = 1
 configs_dict["--validation.double_rotate"] = 1
 
+configs_dict["--dist.port"] = 12253
+
+
+
 
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):
