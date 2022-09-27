@@ -31,7 +31,8 @@ configs_dict["--data.in_memory"] = 1
 configs_dict["--logging.wandb_dryrun"] = 0
 configs_dict["--logging.wandb_project"] = "debug_angleclass_rotations"
 #configs_dict["--logging.wandb_run"] = ""
-
+configs_dict["--angleclassifier.loss_scope"] = 2
+configs_dict["--angleclassifier.prio_class"] = 0.001
 
 
 #configs_dict["--training.load_from"] = ["_mask_norotate"]
@@ -56,8 +57,8 @@ configs_dict["--angleclassifier.shape_class_loss"] = [0, 1]
 configs_dict["--data.in_memory"] = 1
 configs_dict["--training.epochs"] = 3
 configs_dict["--dist.world_size"] = 2
-configs_dict["--training.load_noise"] = [0]
-configs_dict["--training.interpolation"] = [2]
+configs_dict["--training.load_noise"] = [0, 2]
+configs_dict["--training.interpolation"] = [1]
 configs_dict["--training.double_rotate"] = 1
 configs_dict["--validation.double_rotate"] = 1
 
