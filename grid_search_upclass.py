@@ -35,7 +35,7 @@ configs_dict["--logging.wandb_project"] = "debug_angleclass_rotations"
 
 
 #configs_dict["--training.load_from"] = ["_mask_norotate"]
-configs_dict["--angleclassifier.freeze_base"] = 1
+configs_dict["--angleclassifier.freeze_base"] = 0
 configs_dict["--lr.lr"] = 0.5
 configs_dict["--training.load_from"] = [
 "random_rotate:0__arch:resnet50__"
@@ -46,6 +46,8 @@ configs_dict["--angleclassifier.attach_ang_classifier"] = 0
 configs_dict["--angleclassifier.classifier_upright"] = 'deep'
 #configs_dict["--angleclassifier.classifier_ang"] = ['deep']
 configs_dict["--angleclassifier.classifier_ang"] = 'deep'
+configs_dict["--angleclassifier.loss_scope"] = 2
+configs_dict["--angleclassifier.prio_class"] = 0.001
 
 
 configs_dict["--angleclassifier.flatten"] = ['basic', 'extended']
