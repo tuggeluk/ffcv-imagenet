@@ -66,7 +66,7 @@ configs_dict["--validation.double_rotate"] = 1
 configs_dict["--training.p_flip_upright"] = 0.5
 configs_dict["--validation.p_flip_upright"] = 0.5
 
-configs_dict["--resolution.max_res"] = 500
+configs_dict["--resolution.max_res"] = [500]
 configs_dict["--resolution.min_res"] = 500
 
 configs_dict["--training.double_resize"] = 1
