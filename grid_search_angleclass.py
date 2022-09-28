@@ -59,8 +59,8 @@ configs_dict["--training.epochs"] = 30
 configs_dict["--dist.world_size"] = 2
 configs_dict["--training.load_noise"] = [0, 2]
 configs_dict["--training.interpolation"] = [1]
-configs_dict["--training.double_rotate"] = 1
-configs_dict["--validation.double_rotate"] = 1
+# configs_dict["--training.double_rotate"] = 1
+# configs_dict["--validation.double_rotate"] = 1
 
 configs_dict["--dist.port"] = 12253
 
