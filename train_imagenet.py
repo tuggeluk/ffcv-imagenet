@@ -108,10 +108,10 @@ Section('validation', 'Validation parameters stuff').params(
     corner_mask=Param(int, 'should mask corners at test time', default=0),
     random_rotate=Param(int, 'should random rotate at test time', default=0),
     p_flip_upright=Param(float, 'percentage of images to be upright', default=0),
-    double_rotate=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=1),
-    double_resize=Param(int, 'resize inbetween rotates only works if double rotate ona late resize are on', default=1),
+    double_rotate=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
+    double_resize=Param(int, 'resize inbetween rotates only works if double rotate ona late resize are on', default=0),
     pre_flip=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
-    late_resize=Param(int, 'resize after rotation, <0 means do nothing', default=125),
+    late_resize=Param(int, 'resize after rotation, <0 means do nothing', default=-1),
     load_noise=Param(int, '0: no effect, 1:load random noise instead of images, 2: load blank colors, 3: random lines', default=0),
     interpolation=Param(int, 'interpolation method of rotations, 0:nearest, 1:bilinear, 2: PIL bicubic', default=1)
 )
@@ -132,9 +132,9 @@ Section('training', 'training hyper param stuff').params(
     block_rotate=Param(int, 'should the whole tensor be rotated at once', default=0),
     p_flip_upright=Param(float, 'percentage of images to be upright', default=0),
     load_from=Param(str, 'path of pretrained weights', default=""),
-    double_rotate=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=1),
-    double_resize=Param(int, 'resize inbetween rotates only works if double rotate and late resize are on', default=1),
-    late_resize=Param(int, 'resize after rotation, <0 means do nothing', default=125),
+    double_rotate=Param(int, 'rotate everything twice to check if rotation artifacts play a role', default=0),
+    double_resize=Param(int, 'resize inbetween rotates only works if double rotate and late resize are on', default=0),
+    late_resize=Param(int, 'resize after rotation, <0 means do nothing', default=-1),
     load_noise=Param(int, '0: no effect, 1:load random noise instead of images, 2: load blank colors, 3: random lines', default=0),
     interpolation=Param(int, 'interpolation method of rotations, 0:nearest, 1:bilinear, 2: PIL bicubic', default=1)
 )
