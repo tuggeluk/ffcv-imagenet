@@ -10,8 +10,8 @@ configs_dict = OrderedDict()
 
 if on_dgx:
     configs_dict["--config-file"] = "configs/angleclass_configs/rn18_angleclass_base.yaml"
-    configs_dict["--data.train_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/train_large.ffcv"
-    configs_dict["--data.val_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/val_large.ffcv"
+    configs_dict["--data.train_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/train.ffcv"
+    configs_dict["--data.val_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/val.ffcv"
     #configs_dict["--logging.folder"] = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
     checkpoints_basedir = "logs/BaseModels"
     logging_basedir = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
@@ -65,14 +65,14 @@ configs_dict["--validation.double_rotate"] = 1
 configs_dict["--dist.port"] = 12253
 
 
-configs_dict["--resolution.max_res"] = [450]
-configs_dict["--resolution.min_res"] = 450
+# configs_dict["--resolution.max_res"] = [450]
+# configs_dict["--resolution.min_res"] = 450
 
 configs_dict["--training.double_resize"] = 1
 configs_dict["--validation.double_resize"] = 1
 
-configs_dict["--training.late_resize"] = 256
-configs_dict["--validation.late_resize"] = 256
+configs_dict["--training.late_resize"] = 200
+configs_dict["--validation.late_resize"] = 200
 
 
 

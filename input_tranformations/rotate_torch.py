@@ -153,7 +153,7 @@ class RandomRotate_Torch(Operation):
 
             if self.double_rotate:
                 if self.late_resize > 0 and self.double_resize == 1:
-                    mid_size = np.random.randint(low=self.late_resize+10, high=images.shape[2]-10)
+                    mid_size = np.random.randint(low=self.late_resize+5, high=images.shape[2]-5)
                     images = resize(images, interpolation=InterpolationMode.BICUBIC, size=mid_size,
                                     antialias=True)
 
