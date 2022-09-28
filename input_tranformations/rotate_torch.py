@@ -87,7 +87,7 @@ class RandomRotate_Torch(Operation):
     def generate_code_ind(self) -> Callable:
         parallel_range = Compiler.get_iterator()
 
-        def random_rotate_tensor(images, _, indices):
+        def random_rotate_tensor(images, dst, indices):
 
             orig_imgs = None
             if self.ret_orig_img:
@@ -155,7 +155,7 @@ class RandomRotate_Torch(Operation):
                 if self.late_resize > 0 and self.double_resize == 1:
                     mid_size = np.random.randint(low=self.late_resize+5, high=images.shape[2]-5)
                     images = resize(images, interpolation=InterpolationMode.BICUBIC, size=mid_size,
-                                    antialias=True)
+                                    antialias=True,)
 
                 pre_angle = np.random.randint(-360, 360, size=images.shape[0])
                 for i in parallel_range(len(indices)):
@@ -169,11 +169,13 @@ class RandomRotate_Torch(Operation):
                 images[i] = self.sw_rotate(images[i], int(fin_angle[i]))
 
             if self.late_resize > 0:
-               images = resize(images, interpolation=InterpolationMode.BICUBIC, size=self.late_resize, antialias=True)
+                images = resize(images, interpolation=InterpolationMode.BICUBIC, size=self.late_resize, antialias=True)
+                images = images.contiguous(memory_format=ch.channels_last)
 
             images = images.permute(0, 2, 3, 1)
             out_tensor = ch.Tensor(angle).type(ch.int32)
             out_tensor = out_tensor.to(images.device)
+
             return (images, out_tensor, orig_imgs)
 
         random_rotate_tensor.is_parallel = True
