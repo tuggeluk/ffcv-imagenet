@@ -65,8 +65,8 @@ configs_dict["--validation.double_rotate"] = 1
 configs_dict["--dist.port"] = 12253
 
 
-configs_dict["--resolution.max_res"] = [500]
-configs_dict["--resolution.min_res"] = 500
+configs_dict["--resolution.max_res"] = [450]
+configs_dict["--resolution.min_res"] = 450
 
 configs_dict["--training.double_resize"] = 1
 configs_dict["--validation.double_resize"] = 1
