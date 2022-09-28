@@ -10,8 +10,8 @@ configs_dict = OrderedDict()
 
 if on_dgx:
     configs_dict["--config-file"] = "configs/angleclass_configs/rn18_angleclass_base.yaml"
-    configs_dict["--data.train_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/train.ffcv"
-    configs_dict["--data.val_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/val.ffcv"
+    configs_dict["--data.train_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/train_large.ffcv"
+    configs_dict["--data.val_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/val_large.ffcv"
     #configs_dict["--logging.folder"] = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
     checkpoints_basedir = "logs/BaseModels"
     logging_basedir = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
@@ -56,7 +56,7 @@ configs_dict["--angle_testmode.corr_pred"] = 0
 configs_dict["--angleclassifier.shape_class_loss"] = 0
 
 configs_dict["--data.in_memory"] = 1
-configs_dict["--training.epochs"] = 3
+configs_dict["--training.epochs"] = 30
 configs_dict["--dist.world_size"] = 2
 configs_dict["--training.load_noise"] = [0, 2]
 configs_dict["--training.interpolation"] = [1]
@@ -65,6 +65,15 @@ configs_dict["--validation.double_rotate"] = 1
 
 configs_dict["--training.p_flip_upright"] = 0.5
 configs_dict["--validation.p_flip_upright"] = 0.5
+
+configs_dict["--resolution.max_res"] = 500
+configs_dict["--resolution.min_res"] = 500
+
+configs_dict["--training.double_resize"] = 1
+configs_dict["--validation.double_resize"] = 1
+
+configs_dict["--training.late_resize"] = 256
+configs_dict["--validation.late_resize"] = 256
 
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):

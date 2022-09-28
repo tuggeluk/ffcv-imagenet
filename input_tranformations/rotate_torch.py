@@ -32,7 +32,7 @@ class RandomRotate_Torch(Operation):
         The module for transformation
     """
     def __init__(self, block_rotate: bool = False, p_flip_upright = 0, double_rotate = False, pre_flip = False,
-                 ret_orig_img = False, late_resize = -1, load_noise = 0, interpolation = 1):
+                 ret_orig_img = False, late_resize = -1, double_resize=0, load_noise = 0, interpolation = 1):
         super().__init__()
         self.block_rotate = block_rotate
         self.angle_config = -1
@@ -43,6 +43,7 @@ class RandomRotate_Torch(Operation):
         self.late_resize = late_resize
         self.load_noise = load_noise
         self.interpolation = interpolation
+        self.double_resize = double_resize
 
     def set_angle_config(self, angle_config: int = -1, p_flip_upright = 0):
         self.angle_config = angle_config
@@ -151,6 +152,11 @@ class RandomRotate_Torch(Operation):
             images = images.permute(0, 3, 1, 2)
 
             if self.double_rotate:
+                if self.late_resize > 0 and self.double_resize == 1:
+                    mid_size = np.random.randint(low=self.late_resize+10, high=images.shape[2]-10)
+                    images = resize(images, interpolation=InterpolationMode.BICUBIC, size=mid_size,
+                                    antialias=True)
+
                 pre_angle = np.random.randint(-360, 360, size=images.shape[0])
                 for i in parallel_range(len(indices)):
                     images[i] = self.sw_rotate(images[i], int(pre_angle[i]))
