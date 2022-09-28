@@ -38,6 +38,7 @@ class ToTorchImage(Operation):
                 inp = inp.view(dtype=ch.float16)
                 pass
             inp = inp.permute([0, 3, 1, 2])
+            inp = inp.contiguous()
             # If channels last, it's already contiguous so we're good
             if self.channels_last:
                 assert inp.is_contiguous(memory_format=ch.channels_last)
