@@ -152,15 +152,17 @@ class RandomRotate_Torch(Operation):
             images = images.permute(0, 3, 1, 2)
 
             if self.double_rotate:
+                pre_angle = np.random.randint(-360, 360, size=images.shape[0])
+                for i in parallel_range(len(indices)):
+                    images[i] = self.sw_rotate(images[i], int(pre_angle[i]))
+                pre_rotate += pre_angle
+
                 if self.late_resize > 0 and self.double_resize == 1:
                     mid_size = np.random.randint(low=self.late_resize+5, high=images.shape[2]-5)
                     images = resize(images, interpolation=InterpolationMode.BICUBIC, size=mid_size,
                                     antialias=True,)
 
-                pre_angle = np.random.randint(-360, 360, size=images.shape[0])
-                for i in parallel_range(len(indices)):
-                    images[i] = self.sw_rotate(images[i], int(pre_angle[i]))
-                pre_rotate += pre_angle
+
 
             #final rotation
             #compute offset
