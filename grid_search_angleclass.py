@@ -55,9 +55,9 @@ configs_dict["--angle_testmode.corr_pred"] = 1
 configs_dict["--angleclassifier.shape_class_loss"] = 0
 
 configs_dict["--data.in_memory"] = 1
-configs_dict["--training.epochs"] = 30
+configs_dict["--training.epochs"] = 5
 configs_dict["--dist.world_size"] = 4
-configs_dict["--training.load_noise"] = [0, 2, 3]
+configs_dict["--training.load_noise"] = [2, 3]
 configs_dict["--training.interpolation"] = [1]
 configs_dict["--training.double_rotate"] = 0
 configs_dict["--validation.double_rotate"] = 0
