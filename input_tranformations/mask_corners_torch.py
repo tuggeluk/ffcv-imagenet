@@ -46,11 +46,15 @@ class MaskCorners_Torch(Operation):
             x = np.arange(0, images[0].shape[0], 1) - np.floor(images[0].shape[0] / 2)
             y = np.arange(0, images[0].shape[1], 1) - np.floor(images[0].shape[1] / 2)
             xx, yy = np.meshgrid(x, y)
-            mask = (np.sqrt((xx * xx) + (yy * yy)) - images[0].shape[0] / 2) > 0
+            mask = (np.sqrt((xx * xx) + (yy * yy)) - images[0].shape[0] / 2) > -3
 
             # from PIL import Image
             # Image.fromarray(np.array(images[0].cpu())).show()
             images[:,mask,:] = 0
+
+            # from PIL import Image
+            # for i in range(10):
+            #     Image.fromarray(np.array(images[i].cpu())).save("/home/tugg/masked"+str(i)+".png")
 
 
             if angles is not None:

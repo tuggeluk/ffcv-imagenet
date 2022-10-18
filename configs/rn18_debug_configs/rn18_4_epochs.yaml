@@ -23,7 +23,7 @@ resolution:
   min_res: 224
   start_ramp: 11
 training:
-  batch_size: 26
+  batch_size: 12
   bn_wd: 0
   distributed: 0
   epochs: 4
@@ -37,9 +37,16 @@ training:
   block_rotate: 0
   checkpoint_interval: -1
   eval_only: 0
+  double_rotate: 1
+  double_resize: 1
+  late_resize: 100
+  load_noise: 2
 validation:
   lr_tta: False
   resolution: 160
   corner_mask: 1
   random_rotate: 1
-
+  double_rotate: 1
+  double_resize: 1
+  late_resize: 100
+  load_noise: 2
