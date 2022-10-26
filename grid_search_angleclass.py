@@ -57,22 +57,20 @@ configs_dict["--angleclassifier.shape_class_loss"] = 0
 configs_dict["--data.in_memory"] = 1
 configs_dict["--training.epochs"] = 5
 configs_dict["--dist.world_size"] = 4
-configs_dict["--training.load_noise"] = [2, 3]
-configs_dict["--training.interpolation"] = [1]
-configs_dict["--training.double_rotate"] = 0
-configs_dict["--validation.double_rotate"] = 0
+configs_dict["--training.load_noise"] = [3]
+configs_dict["--training.interpolation"] = 1
+configs_dict["--training.double_rotate"] = [0, 1]
 
 configs_dict["--dist.port"] = 12253
 
 
-# configs_dict["--resolution.max_res"] = [450]
-# configs_dict["--resolution.min_res"] = 450
+configs_dict["--resolution.max_res"] = [450]
+configs_dict["--resolution.min_res"] = 450
 
 configs_dict["--training.double_resize"] = 0
-configs_dict["--validation.double_resize"] = 0
 
-configs_dict["--training.late_resize"] = -1
-configs_dict["--validation.late_resize"] = -1
+configs_dict["--training.late_resize"] = [200, 220, 256]
+
 
 
 
@@ -109,6 +107,15 @@ def build_training_commands() -> list:
                 elif k == '--training.interpolation':
                     append_cmd = str(k)+"="+str(vv)+" "
                     append_cmd += "--validation.interpolation="+str(vv)+" "
+                elif k == '--training.double_rotate':
+                    append_cmd = str(k)+"="+str(vv)+" "
+                    append_cmd += "--validation.double_rotate="+str(vv)+" "
+                elif k == '--training.double_resize':
+                    append_cmd = str(k)+"="+str(vv)+" "
+                    append_cmd += "--validation.double_resize="+str(vv)+" "
+                elif k == '--training.late_resize':
+                    append_cmd = str(k) + "=" + str(vv) + " "
+                    append_cmd += "--validation.late_resize=" + str(vv) + " "
                 else:
                     append_cmd = str(k)+"="+str(vv)+" "
 

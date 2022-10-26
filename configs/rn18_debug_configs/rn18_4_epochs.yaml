@@ -33,7 +33,7 @@ training:
   weight_decay: 5e-5
   use_blurpool: 1
   corner_mask: 1
-  random_rotate: 1
+  random_rotate: 0
   block_rotate: 0
   checkpoint_interval: -1
   eval_only: 0
@@ -49,4 +49,4 @@ validation:
   double_rotate: 1
   double_resize: 1
   late_resize: 100
-  load_noise: 2
+  load_noise: 0
