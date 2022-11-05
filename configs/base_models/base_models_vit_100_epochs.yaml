@@ -14,16 +14,16 @@ resolution:
   min_res: 224
   start_ramp: 65
 training:
-  batch_size: 100
+  batch_size: 450
   bn_wd: 0
   distributed: 1
-  epochs: 1000
+  epochs: 100
   label_smoothing: 0.1
   momentum: 0.9
   optimizer: sgd
   weight_decay: 0.01
   use_blurpool: 1
-  checkpoint_interval: 50
+  checkpoint_interval: 25
   corner_mask: 1
 validation:
   resolution: 224
