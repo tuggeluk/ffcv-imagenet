@@ -94,16 +94,10 @@ class AngleClassifierWrapper(ch.nn.Module):
                 x = x[:, 0]
 
             print('transformer mode '+ str(self.transformer_mode))
-            print(x.dtype)
-            x = x.type(ch.half)
-            print(x.dtype)
-            print(x.dtype)
-            x = x.half()
-            print(x.dtype)
 
             if self.transformer_mode:
                 x = x.type(ch.half)
-            x = mod(x)
+            x = mod(x.half())
 
             if self.up_class is not None:
                if name in self.up_class.extract_list:
