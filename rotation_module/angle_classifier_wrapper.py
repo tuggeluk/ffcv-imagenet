@@ -93,9 +93,8 @@ class AngleClassifierWrapper(ch.nn.Module):
             if name == 'heads':
                 x = x[:, 0]
 
-            import pdb
-            pdb.set_trace()
-
+            print('transformer mode '+ str(self.transformer_mode))
+            print(x.dtype)
             if self.transformer_mode:
                 x = x.type(ch.half)
             x = mod(x)
