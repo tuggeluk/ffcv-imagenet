@@ -10,23 +10,23 @@ lr:
   lr_schedule_type: cyclic
 resolution:
   end_ramp: 76
-  max_res: 224
-  min_res: 224
+  max_res: 256
+  min_res: 256
   start_ramp: 65
 training:
-  batch_size: 450
+  batch_size: 100
   bn_wd: 0
   distributed: 1
-  epochs: 100
+  epochs: 1000
   label_smoothing: 0.1
   momentum: 0.9
   optimizer: sgd
-  weight_decay: 0.3
-  use_blurpool: 0
-  checkpoint_interval: 25
+  weight_decay: 0.01
+  use_blurpool: 1
+  checkpoint_interval: 50
   corner_mask: 1
 validation:
-  resolution: 224
+  resolution: 256
   corner_mask: 1
 angle_testmode:
   standard: 1
