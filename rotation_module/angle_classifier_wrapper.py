@@ -85,6 +85,7 @@ class AngleClassifierWrapper(ch.nn.Module):
             # Expand the class token to the full batch
             batch_class_token = self.base_model.class_token.expand(n, -1, -1)
             x = ch.cat([batch_class_token, x], dim=1)
+            x = x.type(ch.half)
 
         for name, mod in self.forward_modules.items():
             if name == 'fc' or name == 'classifier':
