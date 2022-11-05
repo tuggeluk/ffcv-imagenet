@@ -587,7 +587,7 @@ class ImageNetTrainer:
         model = model.to(self.gpu)
 
         if distributed:
-            model = ch.nn.parallel.DistributedDataParallel(model, device_ids=[self.gpu])
+            model = ch.nn.parallel.DistributedDataParallel(model, device_ids=[self.gpu], find_unused_parameters=True)
 
         return model, scaler
 
