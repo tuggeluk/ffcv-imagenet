@@ -89,7 +89,7 @@ Section('lr', 'lr scheduling').params(
     step_length=Param(int, 'learning rate step length', default=30),
     lr_schedule_type=Param(OneOf(['step', 'cyclic']), default='cyclic'),
     lr=Param(float, 'learning rate', default=0.5),
-    lr_peak_epoch=Param(int, 'Epoch at which LR peaks', default=4),
+    lr_peak_epoch=Param(int, 'Epoch at which LR peaks', default=30),
 )
 
 Section('logging', 'how to log stuff').params(
@@ -146,13 +146,13 @@ Section('dist', 'distributed training options').params(
 )
 
 Section('angleclassifier', 'distributed training options').params(
-    attach_upright_classifier=Param(int, 'should an uprightness classifier be added to the model?', default=1),
-    attach_ang_classifier=Param(int, 'should an angle classifier be added to the model?', default=1),
+    attach_upright_classifier=Param(int, 'should an uprightness classifier be added to the model?', default=0),
+    attach_ang_classifier=Param(int, 'should an angle classifier be added to the model?', default=0),
 
     classifier_upright=Param(str, 'which angle classifier should be used', default='deep'),
     classifier_ang=Param(str, 'which angle classifier should be used', default='deep'),
 
-    loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=1),
+    loss_scope=Param(int, '0: compute loss on img classification, 1: compute loss on angle, 2:combined', default=0),
     freeze_base=Param(int, 'should the base model be frozen?', default=0),
     angle_binsize=Param(Fastargs_List(), 'angle width lumped into one class', default=['lr', 3, 10, 90]),
     prio_class=Param(float, 'should we use regression for the angle', default=1),
@@ -654,11 +654,11 @@ class ImageNetTrainer:
     def compute_angle_loss(self, output_up, output_ang, target_up, target_ang, attach_upright_classifier,
                            attach_ang_classifier, angle_binsize):
         tot_loss = 0
-        if attach_upright_classifier:
+        if attach_upright_classifier and target_up is not None:
             for i in range(len(angle_binsize)):
                 tot_loss += self.loss(output_up[i], target_up[i])
 
-        if attach_ang_classifier:
+        if attach_ang_classifier and target_ang is not None:
             tot_loss += self.loss(output_ang, target_ang)
 
         return tot_loss
@@ -780,6 +780,8 @@ class ImageNetTrainer:
         with ch.no_grad():
             with autocast():
                 for images, target in tqdm(self.val_loader):
+                    target_up = target_ang = None
+
                     if isinstance(images, tuple):
                         images = tuple(x[:target.shape[0]] for x in images)
 
@@ -790,7 +792,6 @@ class ImageNetTrainer:
                         if orig_imgs is not None:
                             orig_imgs = orig_imgs[:target.shape[0]]
 
-                        target_up = target_ang = None
                         if attach_upright_classifier:
                             target_up = self.prep_angle_target(angles, up_class=True, val_mode=True)
                         if attach_ang_classifier:
@@ -807,6 +808,9 @@ class ImageNetTrainer:
                     #     images = self.mask_corners(images)
                     #     images = self.norm_images(images, dtype)
 
+                    # target_ang = ch.tensor([0, 30, 60, 90, 120, 150, 180, 210, 270,
+                    #                        300, 330, 0, 180, 210, 240, 270, 300, 330]).to(target_ang.device)
+
 
                     output_cls, output_up, output_ang = self.model(images)
 
@@ -821,11 +825,11 @@ class ImageNetTrainer:
                         #print("val loss clss: " + str(self.loss(output_cls, target)))
 
                         if loss_scope == 1 or loss_scope == 2:
-                            if attach_upright_classifier:
+                            if attach_upright_classifier and target_up is not None:
                                 for i_bsize, b_size in enumerate(angle_binsize):
                                     self.val_meters['top_1_angle_upright_' + str(b_size) + "_binsize"](output_up[i_bsize], target_up[i_bsize])
 
-                            if attach_ang_classifier:
+                            if attach_ang_classifier and target_ang is not None:
                                 for k in ['top_1_angle', 'top_5_angle']:
                                     self.val_meters[k](output_ang, target_ang)
 
@@ -838,6 +842,9 @@ class ImageNetTrainer:
 
                     if corr_pred:
                         assert attach_ang_classifier
+                        # from PIL import Image
+                        # Image.fromarray(orig_imgs[1].cpu().numpy()).show()
+                        # Image.fromarray(corr_imgs[1].cpu().numpy().transpose(1,2,0)).show()
 
                         corr_imgs = orig_imgs.clone()
                         corr_imgs = corr_imgs.permute(0,3,1,2)
@@ -847,8 +854,28 @@ class ImageNetTrainer:
 
                         corr_imgs = self.rotate_images(corr_imgs, unrotate_from_orig)
                         corr_imgs = self.mask_corners(corr_imgs)
+
+                        # # create sanity-check image
+                        # from PIL import Image
+                        # orig_imgs_san = orig_imgs.clone().cpu()
+                        # corr_imgs_san = corr_imgs.clone().cpu()
+                        # orig_imgs_san = self.mask_corners(orig_imgs_san.permute(0, 3, 1, 2))
+                        # orig_imgs_san = orig_imgs_san.numpy()
+                        # corr_imgs_san = corr_imgs_san.numpy()
+                        # target_san = target.clone().cpu().numpy()
+                        #
+                        # for i in np.unique(target_san):
+                        #     inps = np.concatenate(orig_imgs_san[target_san == i].transpose(0, 2, 3, 1), axis=1)
+                        #     corrs = np.concatenate(corr_imgs_san[target_san == i].transpose(0, 2, 3, 1), axis=1)
+                        #
+                        #     Image.fromarray(np.concatenate([inps, corrs], axis=0).astype(np.uint8)).show()
+                        #     Image.fromarray(np.concatenate([inps, corrs], axis=0).astype(np.uint8)).save(str(i)+"sanity.png")
+                        # # end sanity check image
+
+
                         corr_imgs = self.norm_images(corr_imgs, images.dtype)
                         output_cls_corr_pred, ouput_up_corr_pred, ouput_ang_corr_pred = self.model(corr_imgs)
+
 
                         refine_predictions = False
                         if refine_predictions:
@@ -935,8 +962,8 @@ class ImageNetTrainer:
         x = np.arange(0, images[0].shape[0], 1) - np.floor(images[0].shape[0] / 2)
         y = np.arange(0, images[0].shape[1], 1) - np.floor(images[0].shape[1] / 2)
         xx, yy = np.meshgrid(x, y)
-        mask = (np.sqrt((xx * xx) + (yy * yy)) - images[0].shape[0] / 2) > 0
-        images[:, mask, :] = 0
+        mask = (np.sqrt((xx * xx) + (yy * yy)) - images[0].shape[0] / 2) > -3
+        images[:, mask, :] = 255
         images = images.permute(0, 3, 1, 2)
         return images
 

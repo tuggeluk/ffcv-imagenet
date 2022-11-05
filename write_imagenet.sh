@@ -1,7 +1,8 @@
 #!/bin/bash
 
-IMAGENET_DIR="/home/tugg/Documents/Datasets/ImageNet"
-WRITE_DIR="/media/tugg/sg_bak/Data_Archives/ImageNet_ffcv"
+IMAGENET_DIR="/home/tugg/Documents/rotation_module/santiy_check_data/processed/"
+WRITE_DIR="/home/tugg/Documents/rotation_module/santiy_check_data/ffcv_out"
+
 
 write_dataset () {
     write_path=$WRITE_DIR/${1}_${2}_${3}_${4}.ffcv
@@ -17,5 +18,5 @@ write_dataset () {
         --cfg.jpeg_quality=$4
 }
 
-write_dataset train $1 $2 $3
-#write_dataset val $1 $2 $3
+#write_dataset train $1 $2 $3
+write_dataset val $1 $2 $3

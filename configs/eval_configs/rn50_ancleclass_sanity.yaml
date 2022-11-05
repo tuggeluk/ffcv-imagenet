@@ -1,0 +1,36 @@
+data:
+  in_memory: 1
+  num_workers: 12
+  train_dataset: /home/tugg/Documents/rotation_module/santiy_check_data/ffcv_out/val_500_0.50_90.ffcv
+  val_dataset: /home/tugg/Documents/rotation_module/santiy_check_data/ffcv_out/val_500_0.50_90.ffcv
+dist:
+  world_size: 1
+logging:
+  folder: /tmp/
+  log_level: 1
+  wandb_dryrun: 1
+  wandb_project: rotation_benchmark
+  wandb_run: rn50_88_epoch_mask_rotate
+  wandb_batch_interval: 20
+model:
+  arch: resnet50
+validation:
+  resolution: 256
+  corner_mask: 1
+  random_rotate: 1
+  p_flip_upright: 1
+  batch_size: 512
+angle_testmode:
+  standard: 1
+  corr_up: 1
+  corr_pred: 1
+angleclassifier:
+  attach_upright_classifier: 0
+  attach_ang_classifier: 1
+  classifier_upright: deep
+  classifier_ang: deep
+  flatten: basic
+  angle_binsize: [1, 12, 45, 90, 180]
+training:
+  load_from: /home/tugg/Documents/rotation_module/ffcv-imagenet/logs/angle_classifiers/angleclass_load_from:random_rotate:0__arch:resnet50____attach_ang_classifier:1__flatten:basic__load_noise:0__double_rotate:0__max_res:450__double_resize:0__late_resize:256__/final_weights.pt
+  eval_only: 1

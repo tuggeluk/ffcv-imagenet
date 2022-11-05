@@ -10,7 +10,7 @@ from fastargs.decorators import param, section
 from fastargs import get_current_config
 
 Section('cfg', 'arguments to give the writer').params(
-    dataset=Param(And(str, OneOf(['cifar', 'imagenet', 'stanfordcars'])), 'Which dataset to write', default='imagenet'),
+    dataset=Param(And(str, OneOf(['cifar', 'imagenet', 'stanfordcars', 'imagenet_sanitycheck'])), 'Which dataset to write', default='imagenet'),
     split=Param(And(str, OneOf(['train', 'val', 'test'])), 'Train or val set', required=True),
     data_dir=Param(str, 'Where to find the PyTorch dataset', required=True),
     write_path=Param(str, 'Where to write the new dataset', required=True),

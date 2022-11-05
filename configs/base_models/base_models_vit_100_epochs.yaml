@@ -1,0 +1,38 @@
+data:
+  in_memory: 1
+  num_workers: 12
+dist:
+  world_size: 4
+logging:
+  folder: /tmp/
+lr:
+  lr: 0.001
+  lr_schedule_type: cyclic
+resolution:
+  end_ramp: 76
+  max_res: 256
+  min_res: 256
+  start_ramp: 65
+training:
+  batch_size: 100
+  bn_wd: 0
+  distributed: 1
+  epochs: 1000
+  label_smoothing: 0.1
+  momentum: 0.9
+  optimizer: sgd
+  weight_decay: 0.01
+  use_blurpool: 1
+  checkpoint_interval: 50
+  corner_mask: 1
+validation:
+  resolution: 256
+  corner_mask: 1
+angle_testmode:
+  standard: 1
+  corr_up: 0
+  corr_pred: 0
+angleclassifier:
+  attach_upright_classifier: 0
+  attach_ang_classifier: 0
+  loss_scope: 0
