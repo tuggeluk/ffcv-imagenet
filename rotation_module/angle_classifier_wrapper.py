@@ -93,11 +93,9 @@ class AngleClassifierWrapper(ch.nn.Module):
             if name == 'heads':
                 x = x[:, 0]
 
-            print('transformer mode '+ str(self.transformer_mode))
-
             if self.transformer_mode:
                 x = x.type(ch.half)
-            x = mod(x.half())
+            x = mod(x)
 
             if self.up_class is not None:
                if name in self.up_class.extract_list:

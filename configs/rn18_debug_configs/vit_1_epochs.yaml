@@ -1,0 +1,44 @@
+data:
+  in_memory: 1
+  num_workers: 0
+dist:
+  world_size: 1
+logging:
+  folder: /tmp/
+  log_level: 1
+  wandb_dryrun: 1
+  wandb_project: rotation_benchmark
+  wandb_run: rn18_4_epoch_debug
+  wandb_batch_interval: 100
+lr:
+  lr: 0.005
+  lr_peak_epoch: 2
+  lr_schedule_type: cyclic
+model:
+  arch: vit_b_16
+  pretrained: 1
+resolution:
+  end_ramp: 13
+  max_res: 224
+  min_res: 224
+  start_ramp: 11
+training:
+  batch_size: 5
+  bn_wd: 0
+  distributed: 0
+  epochs: 1
+  label_smoothing: 0.1
+  momentum: 0.9
+  optimizer: sgd
+  weight_decay: 5e-5
+  use_blurpool: 1
+  corner_mask: 1
+  random_rotate: 0
+  checkpoint_interval: 0
+validation:
+  lr_tta: true
+  batch_size: 5
+  resolution: 224
+  corner_mask: 0
+  random_rotate: 0
+
