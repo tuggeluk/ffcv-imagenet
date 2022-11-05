@@ -95,6 +95,12 @@ class AngleClassifierWrapper(ch.nn.Module):
 
             print('transformer mode '+ str(self.transformer_mode))
             print(x.dtype)
+            x = x.type(ch.half)
+            print(x.dtype)
+            print(x.dtype)
+            x = x.half()
+            print(x.dtype)
+
             if self.transformer_mode:
                 x = x.type(ch.half)
             x = mod(x)
