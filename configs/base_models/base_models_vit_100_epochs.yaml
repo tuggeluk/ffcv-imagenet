@@ -10,8 +10,8 @@ lr:
   lr_schedule_type: cyclic
 resolution:
   end_ramp: 76
-  max_res: 256
-  min_res: 256
+  max_res: 224
+  min_res: 224
   start_ramp: 65
 training:
   batch_size: 100
@@ -26,7 +26,7 @@ training:
   checkpoint_interval: 50
   corner_mask: 1
 validation:
-  resolution: 256
+  resolution: 224
   corner_mask: 1
 angle_testmode:
   standard: 1

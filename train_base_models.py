@@ -9,7 +9,7 @@ on_dgx = 'dgx' in hostname
 configs_dict = OrderedDict()
 
 if on_dgx:
-    configs_dict["--config-file"] = "configs/base_models/base_models_100_epochs.yaml"
+    configs_dict["--config-file"] = "configs/base_models/base_models_vit_100_epochs.yaml"
     configs_dict["--data.train_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/train.ffcv"
     configs_dict["--data.val_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/val.ffcv"
     logging_basedir = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs/base_models_vit"
