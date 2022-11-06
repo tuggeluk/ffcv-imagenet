@@ -720,6 +720,10 @@ class ImageNetTrainer:
 
             #print("loss-cls:" + str(self.loss(output_cls, target)))
             self.scaler.scale(loss_train).backward()
+
+            self.scaler.unscale_(self.optimizer)
+            ch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
+
             self.scaler.step(self.optimizer)
             self.scaler.update()
             ### Training end

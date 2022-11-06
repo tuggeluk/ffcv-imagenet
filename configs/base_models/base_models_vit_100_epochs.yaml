@@ -21,8 +21,8 @@ training:
   label_smoothing: 0.1
   momentum: 0.9
   optimizer: sgd
-  weight_decay: 0.01
-  use_blurpool: 1
+  weight_decay: 0.3
+  use_blurpool: 0
   checkpoint_interval: 25
   corner_mask: 1
 validation:
