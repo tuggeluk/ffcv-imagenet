@@ -232,7 +232,9 @@ def main(args):
     )
 
     print("Creating model")
-    model = torchvision.models.get_model(args.model, weights=args.weights, num_classes=num_classes)
+    #model = torchvision.models.get_model(args.model, weights=args.weights, num_classes=num_classes)
+    model = getattr(torchvision.models, args.model)(pretrained=args.weights, num_classes=num_classes)
+
     model.to(device)
 
     if args.distributed and args.sync_bn:
