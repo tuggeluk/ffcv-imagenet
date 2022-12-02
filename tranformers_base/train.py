@@ -59,7 +59,7 @@ def train_one_epoch(model, criterion, optimizer, data_loader, device, epoch, arg
         metric_logger.meters["acc5"].update(acc5.item(), n=batch_size)
         metric_logger.meters["img/s"].update(batch_size / (time.time() - start_time))
 
-        wandb.log({'loss': loss.item()})
+    wandb.log({'loss': loss.item()})
 
 
 def evaluate(model, criterion, data_loader, device, print_freq=100, log_suffix=""):
