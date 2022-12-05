@@ -43,7 +43,7 @@ class ClassificationPresetTrain:
         augmix_severity=3,
         random_erase_prob=0.0,
     ):
-        trans = [RandomRotateTransform(),
+        trans = [#RandomRotateTransform(),
                  transforms.RandomResizedCrop(crop_size, interpolation=interpolation)]
         if hflip_prob > 0:
             trans.append(transforms.RandomHorizontalFlip(hflip_prob))
@@ -87,7 +87,7 @@ class ClassificationPresetEval:
 
         self.transforms = transforms.Compose(
             [
-                RandomRotateTransform(),
+                #RandomRotateTransform(),
                 transforms.Resize(resize_size, interpolation=interpolation),
                 transforms.CenterCrop(crop_size),
                 transforms.PILToTensor(),
