@@ -81,7 +81,7 @@ Section('data', 'data related stuff').params(
     val_dataset=Param(str, '.dat file to use for validation', required=True),
     num_workers=Param(int, 'The number of workers', required=True),
     in_memory=Param(int, 'does the dataset fit in memory? (1/0)', required=True),
-    dataset=Param(OneOf(['ImageNet', 'StanfordCars']), '.dat file to use for training', default='ImageNet')
+    dataset=Param(OneOf(['ImageNet', 'StanfordCars', 'OxfordPet']), '.dat file to use for training', default='ImageNet')
 )
 
 Section('lr', 'lr scheduling').params(
@@ -158,7 +158,7 @@ Section('angleclassifier', 'distributed training options').params(
     prio_class=Param(float, 'should we use regression for the angle', default=1),
     prio_angle=Param(float, 'should we use regression for the angle', default=1),
     flatten=Param(And(str, OneOf(['basic', 'extended'])), 'flatten with avg pool (1,1) or (5,5)', default='extended'),
-    shape_class_loss=Param(int, 'perform loss shaping on the angle classifier', default=1)
+    shape_class_loss=Param(int, 'perform loss shaping on the angle classifier', default=0)
 )
 
 Section('angle_testmode', 'configure how testing performed').params(
@@ -524,6 +524,8 @@ class ImageNetTrainer:
             n_cls = 1000
         elif dataset == 'StanfordCars':
             n_cls = 196
+        elif dataset == 'OxfordPet':
+            n_cls = 37
 
         model = getattr(models, arch)(pretrained=pretrained, num_classes=n_cls)
         def apply_blurpool(mod: ch.nn.Module):
