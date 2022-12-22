@@ -41,7 +41,8 @@ import wandb
 
 Section('model', 'model details').params(
     arch=Param(And(str, OneOf(models.__dir__())), default='resnet18'),
-    pretrained=Param(int, 'is pretrained? (1/0)', default=0)
+    pretrained=Param(int, 'is pretrained? (1/0)', default=0),
+    nr_cl=Param(int, 'number of classes', default=1000),
 )
 
 Section('data', 'data related stuff').params(
@@ -71,7 +72,8 @@ Section('multi_validate', 'Multi valdiation parameters').params(
     models_folder=Param(str, 'Destination of pretrained Models', required=True),
     random_runs=Param(int, 'Number of runs with random angles to avg over', default=1),
     degree_interval=Param(int, 'Step size evaluation angle', default=45),
-    add_nonrotate_run=Param(int, 'Additionally evaluate without rotating', default=0)
+    add_nonrotate_run=Param(int, 'Additionally evaluate without rotating', default=0),
+    final_chkp_only=Param(int, 'only eval latest checkpoint', default=0)
 )
 
 
@@ -176,9 +178,10 @@ class MultiModelEvaluator:
     @param('model.arch')
     @param('model.pretrained')
     @param('validation.use_blurpool')
-    def create_model_and_scaler(self, arch, pretrained, use_blurpool):
+    @param('model.nr_cl')
+    def create_model_and_scaler(self, arch, pretrained, use_blurpool, nr_cl):
         scaler = GradScaler()
-        model = getattr(models, arch)(pretrained=pretrained)
+        model = getattr(models, arch)(pretrained=pretrained, num_classes=nr_cl)
         def apply_blurpool(mod: ch.nn.Module):
             for (name, child) in mod.named_children():
                 if isinstance(child, ch.nn.Conv2d) and (np.max(child.stride) > 1 and child.in_channels >= 16): 
@@ -331,7 +334,8 @@ class MultiModelEvaluator:
     @param('logging.log_folder')
     @param('logging.wandb_project')
     @param('logging.wandb_run')
-    def evaluate_folder(cls, models_folder, add_nonrotate_run, log_folder, wandb_project, wandb_run):
+    @param('multi_validate.final_chkp_only')
+    def evaluate_folder(cls, models_folder, add_nonrotate_run, log_folder, wandb_project, wandb_run, final_chkp_only):
         evaluator = cls(gpu=0)
         evaluator.wandb_api = wandb.Api()
         entity, project = "tuggeluk", wandb_project
@@ -368,6 +372,10 @@ class MultiModelEvaluator:
                     checkpoints = evaluator.collect_checkpoints(config_path)
                     sorted_keys = list(checkpoints.keys())
                     list.sort(sorted_keys)
+
+                    if final_chkp_only == 1:
+                        sorted_keys = [sorted_keys[-1]]
+
                     for key in sorted_keys:
                         last_entry = key == sorted_keys[-1]
                         evaluator.evaluate_checkpoint(checkpoints[key], config_path, last_entry, rotate)
