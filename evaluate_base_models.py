@@ -300,10 +300,30 @@ class MultiModelEvaluator:
         # load model weights
         state_dict = ch.load(os.path.join(path, name))
         state_dict_renamed = OrderedDict()
-        for k, v in state_dict.items():
-            # rename keys
-            kn = "module."+k[18:]
-            state_dict_renamed[kn] = state_dict[k]
+
+        if 'lr_scheduler' in state_dict.keys():
+            state_dict = state_dict['model']
+            # ViT checkpoint
+            for k, v in state_dict.items():
+                if "mlp" in k:
+                    pre, post = k.split('mlp.')
+                    if post == '0.weight':
+                        kn = "module."+pre+'mlp.linear_1.weight'
+                    else:
+                        kn = "module."+pre + 'mlp.linear_2.weight'
+                else:
+                    kn = k
+
+                state_dict_renamed[kn] = state_dict[k]
+            # for k, v in state_dict.items():
+            #     # rename keys
+            #     kn = "module."+k
+            #     state_dict_renamed[kn] = state_dict[k]
+        else:
+            for k, v in state_dict.items():
+                # rename keys
+                kn = "module."+k[18:]
+                state_dict_renamed[kn] = state_dict[k]
 
         self.model.load_state_dict(state_dict_renamed)
         # evaluate on random angles  n-times
@@ -361,7 +381,7 @@ class MultiModelEvaluator:
                     evaluator.rotate_transform.set_angle_config(angle_config=-1)
 
                 run_name = wandb_run+"_"+config+"_"+rotate_run
-                if run_name in previous_runs:
+                if run_name in previous_runs and False:
                     print("skipping: "+run_name)
                 else:
                     #(Re-)initialize logger for new config
