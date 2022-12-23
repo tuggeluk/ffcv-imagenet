@@ -19,6 +19,7 @@ run_name_prefix = ""
 
 configs_dict["--data.num_workers"] = 12
 configs_dict["--data.in_memory"] = 1
+configs_dict["--data.dataset"] = 'OxfordPet'
 configs_dict["--logging.wandb_dryrun"] = 0
 configs_dict["--logging.wandb_project"] = "train_angleclass_no_lossshape_OxfordPet"
 #configs_dict["--logging.wandb_run"] = ""
