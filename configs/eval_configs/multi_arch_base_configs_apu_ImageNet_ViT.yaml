@@ -1,8 +1,8 @@
 data:
   in_memory: 1
   num_workers: 12
-  #val_dataset: /cluster/data/tugg/ImageNet_ffcv/val.ffcv
   val_dataset: /cluster/data/tugg/ImageNet_ffcv/val.ffcv
+  #val_dataset: /home/tugg/Documents/Datasets/ImageNet_ffcv/debug.ffcv
 logging:
   log_folder: logs/eval_base_models_ViT
   wandb_dryrun: 0
@@ -16,8 +16,8 @@ validation:
   random_rotate: 1
   mask_corner: 1
 multi_validate:
+  #models_folder: logs/BaseModels/BaseModels/ViT_ImageNet
   models_folder: /cluster/home/tugg/ffcv-imagenet/logs/base_models_ViT
-  #models_folder: /home/tugg/Documents/rotation_module/ffcv-imagenet/logs/rn18_base_configs
   random_runs: 3
   degree_interval: 2
   add_nonrotate_run: 0

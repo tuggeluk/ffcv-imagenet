@@ -303,22 +303,11 @@ class MultiModelEvaluator:
 
         if 'lr_scheduler' in state_dict.keys():
             state_dict = state_dict['model']
-            # ViT checkpoint
             for k, v in state_dict.items():
-                if "mlp" in k:
-                    pre, post = k.split('mlp.')
-                    if post == '0.weight':
-                        kn = "module."+pre+'mlp.linear_1.weight'
-                    else:
-                        kn = "module."+pre + 'mlp.linear_2.weight'
-                else:
-                    kn = k
-
+                # rename keys
+                kn = "module."+k
                 state_dict_renamed[kn] = state_dict[k]
-            # for k, v in state_dict.items():
-            #     # rename keys
-            #     kn = "module."+k
-            #     state_dict_renamed[kn] = state_dict[k]
+
         else:
             for k, v in state_dict.items():
                 # rename keys
