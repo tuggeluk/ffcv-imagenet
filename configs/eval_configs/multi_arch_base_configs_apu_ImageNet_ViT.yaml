@@ -11,7 +11,7 @@ logging:
 model:
   arch: resnet18
 validation:
-  resolution: 256
+  resolution: 224
   use_blurpool: 1
   random_rotate: 1
   mask_corner: 1
