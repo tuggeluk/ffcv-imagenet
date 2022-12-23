@@ -42,7 +42,7 @@ configs_dict["--angleclassifier.attach_upright_classifier"] = 1
 configs_dict["--angleclassifier.attach_ang_classifier"] = 1
 configs_dict["--angleclassifier.classifier_upright"] = ['deep']
 configs_dict["--angleclassifier.classifier_ang"] = ['deep']
-
+configs_dict["--angleclassifier.loss_scope"] = 1
 
 configs_dict["--angleclassifier.flatten"] = 'basic'
 
