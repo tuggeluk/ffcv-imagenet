@@ -8,48 +8,29 @@ on_dgx = 'dgx' in hostname
 
 configs_dict = OrderedDict()
 
-if on_dgx:
-    configs_dict["--config-file"] = "configs/angleclass_configs/rn18_angleclass_base.yaml"
-    configs_dict["--data.train_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/train.ffcv"
-    configs_dict["--data.val_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/val.ffcv"
-    #configs_dict["--logging.folder"] = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
-    checkpoints_basedir = "logs/BaseModels"
-    logging_basedir = "/cluster/home/tugg/rotation_module/ffcv-imagenet/logs"
-    run_name_prefix = ""
-else:
-    configs_dict["--config-file"] = "configs/angleclass_configs/rn18_angleclass_base.yaml"
-    configs_dict["--data.train_dataset"] = "/home/ubuntu/ImageNet_ffcv/train.ffcv"
-    configs_dict["--data.val_dataset"] = "/home/ubuntu/ImageNet_ffcv/val.ffcv"
-    #configs_dict["--logging.folder"] = "/home/ubuntu/rotation_module/ffcv-imagenet/logs"
-    checkpoints_basedir = "logs/BaseModels"
-    logging_basedir = "/home/ubuntu/rotation_module/ffcv-imagenet/logs"
-    run_name_prefix = ""
+configs_dict["--config-file"] = "configs/angleclass_configs/rn18_angleclass_base.yaml"
+configs_dict["--data.train_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/train.ffcv"
+configs_dict["--data.val_dataset"] = "/cluster/data/tugg/ImageNet_ffcv/val.ffcv"
+#configs_dict["--logging.folder"] = "/home/ubuntu/rotation_module/ffcv-imagenet/logs"
+checkpoints_basedir = "/cluster/home/tugg/ffcv-imagenet/logs/base_models_ViT"
+logging_basedir = "/cluster/home/tugg/ffcv-imagenet/logs/angleclass_ViT"
+run_name_prefix = ""
 
 
 configs_dict["--data.num_workers"] = 12
 configs_dict["--data.in_memory"] = 1
 configs_dict["--logging.wandb_dryrun"] = 0
-configs_dict["--logging.wandb_project"] = "train_angleclass_no_lossshape"
-#configs_dict["--logging.wandb_run"] = ""
+configs_dict["--logging.wandb_project"] = "train_angleclass_no_lossshapeViT"
 
 
 
-#configs_dict["--training.load_from"] = ["_mask_norotate"]
 configs_dict["--angleclassifier.freeze_base"] = 1
 configs_dict["--lr.lr"] = 0.5
-configs_dict["--training.load_from"] = ["random_rotate:0__arch:efficientnet_b0__",
-"random_rotate:0__arch:efficientnet_b2__",
-"random_rotate:0__arch:efficientnet_b4__",
-"random_rotate:0__arch:resnet18__",
-"random_rotate:0__arch:resnet50__",
-"random_rotate:0__arch:resnet152__",
-"random_rotate:0__arch:resnext50_32x4d__",
-"random_rotate:0__arch:resnext101_32x8d__"]
+configs_dict["--training.load_from"] = ["random_rotate:0__arch:vit_b_16__no_mixup_cutmix"]
 
 configs_dict["--angleclassifier.attach_upright_classifier"] = 1
 configs_dict["--angleclassifier.attach_ang_classifier"] = 1
 configs_dict["--angleclassifier.classifier_upright"] = ['deep']
-#configs_dict["--angleclassifier.classifier_ang"] = ['deep']
 configs_dict["--angleclassifier.classifier_ang"] = ['deep']
 configs_dict["--angleclassifier.loss_scope"] = 1
 
@@ -57,10 +38,11 @@ configs_dict["--angleclassifier.flatten"] = 'basic'
 
 configs_dict["--angle_testmode.corr_pred"] = [1]
 configs_dict["--angleclassifier.shape_class_loss"] = [0]
+configs_dict["--validation.resolution"] = 224
 
 
 configs_dict["--data.in_memory"] = 1
-configs_dict["--training.epochs"] = [33]
+configs_dict["--training.epochs"] = [33, 5]
 
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):

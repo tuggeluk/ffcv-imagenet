@@ -556,12 +556,20 @@ class ImageNetTrainer:
             from collections import OrderedDict
             state_dict = ch.load(os.path.join(load_from))
             state_dict_renamed = OrderedDict()
-            for k, v in state_dict.items():
-                #rename keys
-                kn = k[7:]
-                if ((not "up_class" in k) and (not "ang_class" in k)) and (not "base_model" in k):
-                    kn = "base_model."+kn
-                state_dict_renamed[kn] = state_dict[k]
+            if 'lr_scheduler' in state_dict.keys():
+                state_dict = state_dict['model']
+                for k, v in state_dict.items():
+                    # rename keys
+                    kn = "module." + k
+                    state_dict_renamed[kn] = state_dict[k]
+
+            else:
+                for k, v in state_dict.items():
+                    #rename keys
+                    kn = k[7:]
+                    if ((not "up_class" in k) and (not "ang_class" in k)) and (not "base_model" in k):
+                        kn = "base_model."+kn
+                    state_dict_renamed[kn] = state_dict[k]
 
             missing, unexpected = model.load_state_dict(state_dict_renamed, strict=False)
             if self.gpu == 0:
