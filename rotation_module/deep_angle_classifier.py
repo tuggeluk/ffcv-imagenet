@@ -25,13 +25,13 @@ class DeepAngleClassifier(BaseAngleClassifier):
 
         if isinstance(in_model, VisionTransformer):
             if len(in_model.encoder.layers) == 24:
-                self.base_in = 64
+                self.base_in = 256
                 self.extract_list = ["encoder_layer_0", "encoder_layer_7", "encoder_layer_15", "encoder_layer_23"]
                 self.in_sizes = [1024, ]*4
                 self.strides = [1, 1, 1, 1]
 
             elif len(in_model.encoder.layers) == 12:
-                self.base_in = 64
+                self.base_in = 256
                 self.extract_list = ["encoder_layer_0", "encoder_layer_3", "encoder_layer_7", "encoder_layer_11"]
                 self.in_sizes = [768, ]*4
                 self.strides = [1, 1, 1, 1]
