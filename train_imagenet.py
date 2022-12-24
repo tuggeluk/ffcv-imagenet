@@ -560,7 +560,7 @@ class ImageNetTrainer:
                 state_dict = state_dict['model']
                 for k, v in state_dict.items():
                     # rename keys
-                    kn = "module." + k
+                    kn = "base_model." + k
                     state_dict_renamed[kn] = state_dict[k]
 
             else:
