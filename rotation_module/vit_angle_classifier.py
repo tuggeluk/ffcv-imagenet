@@ -20,7 +20,6 @@ class VitAngleClassifier(BaseAngleClassifier):
             self.base_in = 64
             self.extract_list = ["encoder_layer_0", "encoder_layer_7", "encoder_layer_15", "encoder_layer_23"]
             self.in_sizes = [1024, ]*4
-            self.strides = [1, 1, 1, 1]
             hidden_dim = 1024
             mlp_dim = 3072
             num_heads = 16
@@ -29,11 +28,11 @@ class VitAngleClassifier(BaseAngleClassifier):
             self.base_in = 64
             self.extract_list = ["encoder_layer_0", "encoder_layer_3", "encoder_layer_7", "encoder_layer_11"]
             self.in_sizes = [768, ]*4
-            self.strides = [1, 1, 1, 1]
             hidden_dim = 768
-            mlp_dim = 4096
+            mlp_dim = 3072
             num_heads = 16
 
+        self.in_model = in_model
 
         norm_layer = partial(nn.LayerNorm, eps=1e-6)
         dropout = 0.0
@@ -66,10 +65,9 @@ class VitAngleClassifier(BaseAngleClassifier):
     def forward(self, x: Tensor) -> (Tensor, Tensor):
         processed = list()
         for i in range(len(self.extract_list)):
-            processed.append(self.in_blocks[i](x[self.extract_list[i]]))
+            processed.append(self.in_blocks[i](x[self.extract_list[i]])[:, 0])
 
         processed = ch.stack(processed, 1)
-        processed = processed[:, :, 0]
         processed = self.fuse_conv(processed)
         processed = ch.squeeze(processed)
 
@@ -83,52 +81,52 @@ class VitAngleClassifier(BaseAngleClassifier):
 
         return x_out
 
-    def _create_downsample(self, in_size, out_size):
-        if not in_size == out_size:
-            return nn.Sequential(
-                conv1x1(in_size, out_size, 1),
-                self._norm_layer(out_size),
-            )
-        else:
-            return nn.Identity()
+    # def _create_downsample(self, in_size, out_size):
+    #     if not in_size == out_size:
+    #         return nn.Sequential(
+    #             conv1x1(in_size, out_size, 1),
+    #             self._norm_layer(out_size),
+    #         )
+    #     else:
+    #         return nn.Identity()
+    #
 
-
-    def _make_layer(
-        self,
-        block: Type[Union[BasicBlock, Bottleneck]],
-        planes: int,
-        blocks: int,
-        stride: int = 1,
-        dilate: bool = False,
-    ) -> nn.Sequential:
-        norm_layer = self._norm_layer
-        downsample = None
-        previous_dilation = self.dilation
-        if dilate:
-            self.dilation *= stride
-            stride = 1
-        if stride != 1 or self.inplanes != planes * block.expansion:
-            downsample = nn.Sequential(
-                conv1x1(self.inplanes, planes * block.expansion, stride),
-                norm_layer(planes * block.expansion),
-            )
-
-        layers = []
-        layers.append(
-            block(
-                self.inplanes, planes, stride, downsample, self.groups, self.base_width, previous_dilation, norm_layer
-            )
-        )
-        self.inplanes = planes * block.expansion
-        for _ in range(1, blocks):
-            layers.append(
-                block(
-                    self.inplanes,
-                    planes,
-                    groups=self.groups,
-                    base_width=self.base_width,
-                    dilation=self.dilation,
-                    norm_layer=norm_layer,
-                )
-            )
-        return nn.Sequential(*layers)
+    # def _make_layer(
+    #     self,
+    #     block: Type[Union[BasicBlock, Bottleneck]],
+    #     planes: int,
+    #     blocks: int,
+    #     stride: int = 1,
+    #     dilate: bool = False,
+    # ) -> nn.Sequential:
+    #     norm_layer = self._norm_layer
+    #     downsample = None
+    #     previous_dilation = self.dilation
+    #     if dilate:
+    #         self.dilation *= stride
+    #         stride = 1
+    #     if stride != 1 or self.inplanes != planes * block.expansion:
+    #         downsample = nn.Sequential(
+    #             conv1x1(self.inplanes, planes * block.expansion, stride),
+    #             norm_layer(planes * block.expansion),
+    #         )
+    #
+    #     layers = []
+    #     layers.append(
+    #         block(
+    #             self.inplanes, planes, stride, downsample, self.groups, self.base_width, previous_dilation, norm_layer
+    #         )
+    #     )
+    #     self.inplanes = planes * block.expansion
+    #     for _ in range(1, blocks):
+    #         layers.append(
+    #             block(
+    #                 self.inplanes,
+    #                 planes,
+    #                 groups=self.groups,
+    #                 base_width=self.base_width,
+    #                 dilation=self.dilation,
+    #                 norm_layer=norm_layer,
+    #             )
+    #         )
+    #     return nn.Sequential(*layers)
