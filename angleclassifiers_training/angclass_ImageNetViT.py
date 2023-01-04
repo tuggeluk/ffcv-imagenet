@@ -27,6 +27,8 @@ configs_dict["--logging.wandb_project"] = "train_angleclass_no_lossshapeViT"
 configs_dict["--angleclassifier.freeze_base"] = 1
 configs_dict["--lr.lr"] = 0.5
 configs_dict["--training.load_from"] = ["random_rotate:0__arch:vit_b_16__no_mixup_cutmix"]
+configs_dict["--resolution.max_res"] = 224
+configs_dict["--resolution.min_res"] = 224
 
 configs_dict["--angleclassifier.attach_upright_classifier"] = 1
 configs_dict["--angleclassifier.attach_ang_classifier"] = 1
