@@ -32,8 +32,6 @@ class VitAngleClassifier(BaseAngleClassifier):
             mlp_dim = 3072
             num_heads = 16
 
-        self.in_model = in_model
-
         norm_layer = partial(nn.LayerNorm, eps=1e-6)
         dropout = 0.0
         attention_dropout = 0.0

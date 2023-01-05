@@ -73,7 +73,7 @@ Section('multi_validate', 'Multi valdiation parameters').params(
     random_runs=Param(int, 'Number of runs with random angles to avg over', default=1),
     degree_interval=Param(int, 'Step size evaluation angle', default=45),
     add_nonrotate_run=Param(int, 'Additionally evaluate without rotating', default=0),
-    final_chkp_only=Param(int, 'only eval latest checkpoint', default=0)
+    final_chkp_only=Param(int, 'only eval latest checkpoint', default=1)
 )
 
 
@@ -349,7 +349,10 @@ class MultiModelEvaluator:
         evaluator.wandb_api = wandb.Api()
         entity, project = "tuggeluk", wandb_project
         runs = evaluator.wandb_api.runs(entity + "/" + project)
-        previous_runs = [run.name for run in runs]
+        try:
+            previous_runs = [run.name for run in runs]
+        except:
+            previous_runs = []
         # iterate trough config paths
         for config in os.listdir(models_folder):
             if "arch:" in config:

@@ -1,0 +1,21 @@
+data:
+  in_memory: 1
+  num_workers: 12
+  val_dataset: /home/tugg/Documents/Datasets/ImageNet_ffcv/debug.ffcv
+logging:
+  log_folder: logs/eval_base_models_ViT
+  wandb_dryrun: 1
+  wandb_project: evaluate_final_base_models_highres_ViT_debug
+  wandb_run: ""
+model:
+  arch: resnet18
+validation:
+  resolution: 224
+  use_blurpool: 1
+  random_rotate: 1
+  mask_corner: 1
+multi_validate:
+  models_folder: logs/BaseModels/BaseModels/ViT_ImageNet
+  random_runs: 3
+  degree_interval: 90
+  add_nonrotate_run: 0
