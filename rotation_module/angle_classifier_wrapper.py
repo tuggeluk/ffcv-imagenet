@@ -79,7 +79,7 @@ class AngleClassifierWrapper(ch.nn.Module):
         extracted_ang_tensors = dict()
 
         if self.transformer_mode:
-            out = self.base_model(x)
+            #out = self.base_model(x)
 
             x = self.base_model._process_input(x)
             n = x.shape[0]
@@ -113,8 +113,10 @@ class AngleClassifierWrapper(ch.nn.Module):
                 if name in self.ang_class.extract_list:
                     extracted_ang_tensors[name] = x
 
-        if not self.transformer_mode:
-            out = x
+        # if not self.transformer_mode:
+        #     out = x
+        out = x
+
 
         up_ang = out_ang = None
         if self.up_class is not None:
