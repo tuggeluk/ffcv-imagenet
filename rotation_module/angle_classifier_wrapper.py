@@ -79,6 +79,8 @@ class AngleClassifierWrapper(ch.nn.Module):
         extracted_ang_tensors = dict()
 
         if self.transformer_mode:
+            out = self.base_model(x)
+
             x = self.base_model._process_input(x)
             n = x.shape[0]
 
@@ -87,7 +89,7 @@ class AngleClassifierWrapper(ch.nn.Module):
             x = ch.cat([batch_class_token, x], dim=1)
 
             # print("debug")
-            out = self.base_model.encoder(x)
+            #out = self.base_model.encoder(x)
 
             #early stage of encoder
             x = x + self.base_model.encoder.pos_embedding
