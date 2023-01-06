@@ -87,7 +87,7 @@ class AngleClassifierWrapper(ch.nn.Module):
             x = ch.cat([batch_class_token, x], dim=1)
 
             # print("debug")
-            # x_enc = self.base_model.encoder(x)
+            out = self.base_model.encoder(x)
 
             #early stage of encoder
             x = x + self.base_model.encoder.pos_embedding
@@ -111,7 +111,9 @@ class AngleClassifierWrapper(ch.nn.Module):
                 if name in self.ang_class.extract_list:
                     extracted_ang_tensors[name] = x
 
-        out = x
+        if not self.transformer_mode:
+            out = x
+
         up_ang = out_ang = None
         if self.up_class is not None:
             up_ang = self.up_class(extracted_up_tensors)
