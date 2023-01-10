@@ -110,7 +110,6 @@ def build_training_commands() -> list:
 
 
 if __name__ == '__main__':
-
     training_commands = build_training_commands()
     for command in training_commands:
         final_command = 'python train_imagenet.py '+command
