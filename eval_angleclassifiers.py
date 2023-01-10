@@ -14,62 +14,65 @@ configs_dict = OrderedDict()
 # --data.in_memory=1 --training.load_from=logs/AngleClass_no_losshape/load_from:random_rotate:0__arch:resnet18____classifier_upright:deep__classifier_ang:deep__corr_pred:1__shape_class_loss:0__epochs:33__/final_weights.pt
 # --model.arch=resnet18 --eval_configs.degree_interval=2 --logging.wandb_run=resnet18 --dist.port=12356
 
+mode = "stanford50"
 
-configs_dict["--config-file"] = "configs/angleclass_configs/rn18_angleclass_base.yaml"
-configs_dict["--data.train_dataset"] = "/home/ubuntu/ImageNet_ffcv/train.ffcv"
-configs_dict["--data.val_dataset"] = "/home/ubuntu/ImageNet_ffcv/val.ffcv"
-#configs_dict["--logging.folder"] = "/home/ubuntu/rotation_module/ffcv-imagenet/logs"
-checkpoints_basedir = "logs/BaseModels"
+if mode == "stanford50":
+    configs_dict["--data.train_dataset"] = "/home/ubuntu/Stanford_ffcv/train.ffcv"
+    configs_dict["--data.val_dataset"] = "/home/ubuntu/Stanford_ffcv/val.ffcv"
+    checkpoints_basedir = "/home/ubuntu/ffcv-imagenet/logs/AngleClass50ep_StanfordCars"
+    configs_dict["--dist.port"] = 12253
+    configs_dict["--logging.wandb_project"] = "test_angleclass_stanfordcars"
+    run_name_prefix = "50ep_"
+
+elif mode == "stanford300":
+    configs_dict["--data.train_dataset"] = "/home/ubuntu/Stanford_ffcv/train.ffcv"
+    configs_dict["--data.val_dataset"] = "/home/ubuntu/Stanford_ffcv/val.ffcv"
+    checkpoints_basedir = "/home/ubuntu/ffcv-imagenet/logs/AngleClass300ep_StanfordCars"
+    configs_dict["--dist.port"] = 12254
+    configs_dict["--logging.wandb_project"] = "test_angleclass_stanfordcars"
+    run_name_prefix = "300ep_"
+
+elif mode == "oxford150":
+    configs_dict["--data.train_dataset"] = "/home/ubuntu/OxfordPet_ffcv/train.ffcv"
+    configs_dict["--data.val_dataset"] = "/home/ubuntu/OxfordPet_ffcv/val.ffcv"
+    checkpoints_basedir = "/home/ubuntu/ffcv-imagenet/logs"
+    configs_dict["--dist.port"] = 12255
+    configs_dict["--logging.wandb_project"] = "test_angleclass_oxfordpets"
+    run_name_prefix = "150ep_"
+
+elif mode == "oxford1000":
+    configs_dict["--data.train_dataset"] = "/home/ubuntu/OxfordPet_ffcv/train.ffcv"
+    configs_dict["--data.val_dataset"] = "/home/ubuntu/OxfordPet_ffcv/val.ffcv"
+    checkpoints_basedir = "/home/ubuntu/ffcv-imagenet/logs/AngleClass1000ep_OxfordPet"
+    configs_dict["--dist.port"] = 12256
+    configs_dict["--logging.wandb_project"] = "test_angleclass_oxfordpets"
+    run_name_prefix = "1000ep_"
+
+else:
+    import sys
+    sys.exit(1)
+
+
+configs_dict["--config-file"] = "configs/rn18_debug_configs/test_angle_class_base.yaml"
+
 logging_basedir = "/home/ubuntu/rotation_module/ffcv-imagenet/logs"
-run_name_prefix = "angleclass_"
 
 
-configs_dict["--data.num_workers"] = 12
+configs_dict["--data.num_workers"] = 8
 configs_dict["--data.in_memory"] = 1
 configs_dict["--logging.wandb_dryrun"] = 0
-configs_dict["--logging.wandb_project"] = "debug_angleclass_rotations"
-#configs_dict["--logging.wandb_run"] = ""
-configs_dict["--angleclassifier.loss_scope"] = 2
-configs_dict["--angleclassifier.prio_class"] = 0.001
+configs_dict["--eval_configs.degree_interval"] = 2
 
-
-#configs_dict["--training.load_from"] = ["_mask_norotate"]
-configs_dict["--angleclassifier.freeze_base"] = 0
-configs_dict["--lr.lr"] = 0.5
 configs_dict["--training.load_from"] = [
-"random_rotate:0__arch:resnet50__"
+"load_from:arch:efficientnet_b0__random_rotate:0",
+"load_from:arch:efficientnet_b2__random_rotate:0",
+"load_from:arch:efficientnet_b4__random_rotate:0",
+"load_from:arch:resnet152__random_rotate:0",
+"load_from:arch:resnet18__random_rotate:0",
+"load_from:arch:resnet50__random_rotate:0",
+"load_from:arch:resnext101_32x8d__random_rotate:0",
+"load_from:arch:resnext50_32x4d__random_rotate:0",
 ]
-
-configs_dict["--angleclassifier.attach_upright_classifier"] = 0
-configs_dict["--angleclassifier.attach_ang_classifier"] = [1]
-configs_dict["--angleclassifier.classifier_upright"] = 'deep'
-#configs_dict["--angleclassifier.classifier_ang"] = ['deep']
-configs_dict["--angleclassifier.classifier_ang"] = 'deep'
-
-
-configs_dict["--angleclassifier.flatten"] = ['basic']
-
-configs_dict["--angle_testmode.corr_pred"] = 1
-configs_dict["--angleclassifier.shape_class_loss"] = 0
-
-configs_dict["--data.in_memory"] = 1
-configs_dict["--training.epochs"] = 5
-configs_dict["--dist.world_size"] = 4
-configs_dict["--training.load_noise"] = [3]
-configs_dict["--training.interpolation"] = 1
-configs_dict["--training.double_rotate"] = [0, 1]
-
-configs_dict["--dist.port"] = 12253
-
-
-configs_dict["--resolution.max_res"] = [450]
-configs_dict["--resolution.min_res"] = 450
-
-configs_dict["--training.double_resize"] = 0
-
-configs_dict["--training.late_resize"] = [200, 220, 256]
-
-
 
 
 def extend_commands(commands:list, append:str) -> list:
@@ -96,26 +99,8 @@ def build_training_commands() -> list:
                     if "arch:" in vv:
                         arch_name = vv.split("arch:")[-1].split("__")[0]
                         append_cmd += "--model.arch=" + arch_name + " "
-                elif k == '--resolution.max_res':
-                    append_cmd = str(k)+"="+str(vv)+" "
-                    append_cmd += "--validation.resolution="+str(vv)+" "
-                elif k == '--training.load_noise':
-                    append_cmd = str(k)+"="+str(vv)+" "
-                    append_cmd += "--validation.load_noise="+str(vv)+" "
-                elif k == '--training.interpolation':
-                    append_cmd = str(k)+"="+str(vv)+" "
-                    append_cmd += "--validation.interpolation="+str(vv)+" "
-                elif k == '--training.double_rotate':
-                    append_cmd = str(k)+"="+str(vv)+" "
-                    append_cmd += "--validation.double_rotate="+str(vv)+" "
-                elif k == '--training.double_resize':
-                    append_cmd = str(k)+"="+str(vv)+" "
-                    append_cmd += "--validation.double_resize="+str(vv)+" "
-                elif k == '--training.late_resize':
-                    append_cmd = str(k) + "=" + str(vv) + " "
-                    append_cmd += "--validation.late_resize=" + str(vv) + " "
-                else:
-                    append_cmd = str(k)+"="+str(vv)+" "
+
+
 
                 append_name = k.split(".")[-1]+":"+str(vv)+"__"
                 for _ in range(init_len):
