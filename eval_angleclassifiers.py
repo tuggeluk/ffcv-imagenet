@@ -22,6 +22,7 @@ if mode == "stanford50":
     checkpoints_basedir = "/home/ubuntu/ffcv-imagenet/logs/AngleClass50ep_StanfordCars"
     configs_dict["--dist.port"] = 12253
     configs_dict["--logging.wandb_project"] = "test_angleclass_stanfordcars"
+    configs_dict["--data.dataset"] = "StanfordCars"
     run_name_prefix = "50ep_"
 
 elif mode == "stanford300":
@@ -30,6 +31,7 @@ elif mode == "stanford300":
     checkpoints_basedir = "/home/ubuntu/ffcv-imagenet/logs/AngleClass300ep_StanfordCars"
     configs_dict["--dist.port"] = 12254
     configs_dict["--logging.wandb_project"] = "test_angleclass_stanfordcars"
+    configs_dict["--data.dataset"] = "StanfordCars"
     run_name_prefix = "300ep_"
 
 elif mode == "oxford150":
@@ -38,6 +40,7 @@ elif mode == "oxford150":
     checkpoints_basedir = "/home/ubuntu/ffcv-imagenet/logs"
     configs_dict["--dist.port"] = 12255
     configs_dict["--logging.wandb_project"] = "test_angleclass_oxfordpets"
+    configs_dict["--data.dataset"] = "OxfordPet"
     run_name_prefix = "150ep_"
 
 elif mode == "oxford1000":
@@ -46,6 +49,7 @@ elif mode == "oxford1000":
     checkpoints_basedir = "/home/ubuntu/ffcv-imagenet/logs/AngleClass1000ep_OxfordPet"
     configs_dict["--dist.port"] = 12256
     configs_dict["--logging.wandb_project"] = "test_angleclass_oxfordpets"
+    configs_dict["--data.dataset"] = "OxfordPet"
     run_name_prefix = "1000ep_"
 
 else:
@@ -65,13 +69,13 @@ configs_dict["--eval_configs.degree_interval"] = 2
 
 configs_dict["--training.load_from"] = [
 "load_from:arch:efficientnet_b0__random_rotate:0",
-"load_from:arch:efficientnet_b2__random_rotate:0",
-"load_from:arch:efficientnet_b4__random_rotate:0",
-"load_from:arch:resnet152__random_rotate:0",
-"load_from:arch:resnet18__random_rotate:0",
-"load_from:arch:resnet50__random_rotate:0",
-"load_from:arch:resnext101_32x8d__random_rotate:0",
-"load_from:arch:resnext50_32x4d__random_rotate:0",
+# "load_from:arch:efficientnet_b2__random_rotate:0",
+# "load_from:arch:efficientnet_b4__random_rotate:0",
+# "load_from:arch:resnet152__random_rotate:0",
+# "load_from:arch:resnet18__random_rotate:0",
+# "load_from:arch:resnet50__random_rotate:0",
+# "load_from:arch:resnext101_32x8d__random_rotate:0",
+# "load_from:arch:resnext50_32x4d__random_rotate:0",
 ]
 
 
