@@ -71,13 +71,13 @@ configs_dict["--angleclassifier.flatten"] = 'basic'
 
 configs_dict["--training.load_from"] = [
 "load_from:arch:efficientnet_b0__random_rotate:0",
-# "load_from:arch:efficientnet_b2__random_rotate:0",
-# "load_from:arch:efficientnet_b4__random_rotate:0",
-# "load_from:arch:resnet152__random_rotate:0",
-# "load_from:arch:resnet18__random_rotate:0",
-# "load_from:arch:resnet50__random_rotate:0",
-# "load_from:arch:resnext101_32x8d__random_rotate:0",
-# "load_from:arch:resnext50_32x4d__random_rotate:0",
+"load_from:arch:efficientnet_b2__random_rotate:0",
+"load_from:arch:efficientnet_b4__random_rotate:0",
+"load_from:arch:resnet152__random_rotate:0",
+"load_from:arch:resnet18__random_rotate:0",
+"load_from:arch:resnet50__random_rotate:0",
+"load_from:arch:resnext101_32x8d__random_rotate:0",
+"load_from:arch:resnext50_32x4d__random_rotate:0",
 ]
 
 
