@@ -67,6 +67,8 @@ configs_dict["--data.in_memory"] = 1
 configs_dict["--logging.wandb_dryrun"] = 0
 configs_dict["--eval_configs.degree_interval"] = 2
 
+configs_dict["--angleclassifier.flatten"] = 'basic'
+
 configs_dict["--training.load_from"] = [
 "load_from:arch:efficientnet_b0__random_rotate:0",
 # "load_from:arch:efficientnet_b2__random_rotate:0",
