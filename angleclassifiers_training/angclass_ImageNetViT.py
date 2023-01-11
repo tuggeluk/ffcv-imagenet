@@ -41,10 +41,10 @@ configs_dict["--angleclassifier.flatten"] = 'basic'
 configs_dict["--angle_testmode.corr_pred"] = [1]
 configs_dict["--angleclassifier.shape_class_loss"] = [0]
 configs_dict["--validation.resolution"] = 224
-
+configs_dict["--dist.port"] = 12255
 
 configs_dict["--data.in_memory"] = 1
-configs_dict["--training.epochs"] = [33, 5]
+configs_dict["--training.epochs"] = [33, 100]
 
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):
