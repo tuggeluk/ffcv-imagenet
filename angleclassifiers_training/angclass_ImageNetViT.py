@@ -33,7 +33,7 @@ configs_dict["--resolution.min_res"] = 224
 configs_dict["--angleclassifier.attach_upright_classifier"] = 1
 configs_dict["--angleclassifier.attach_ang_classifier"] = 1
 configs_dict["--angleclassifier.classifier_upright"] = ['vit']
-configs_dict["--angleclassifier.classifier_ang"] = ['vit']
+configs_dict["--angleclassifier.classifier_ang"] = ['vitcnn']
 configs_dict["--angleclassifier.loss_scope"] = 1
 
 configs_dict["--angleclassifier.flatten"] = 'basic'
