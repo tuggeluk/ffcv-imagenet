@@ -44,6 +44,8 @@ from rotation_module.fc2_angle_classifier import Fc2AngleClassifier
 from rotation_module.deep_angle_classifier import DeepAngleClassifier
 from torchvision.transforms.functional import rotate
 from rotation_module.vit_angle_classifier import VitAngleClassifier
+from rotation_module.vit_angle_classifier_convolutions import VitAngleClassifierCNN
+
 
 class Fastargs_List(Checker):
     def __init__(self, cast_to = str):
@@ -496,6 +498,8 @@ class ImageNetTrainer:
             ang_class = DeepAngleClassifier(base_model, num_out, layers=(1, 2, 2, 3), flatten=flatten)
         elif type == 'vit':
             ang_class = VitAngleClassifier(base_model, num_out)
+        elif type == 'vitcnn':
+            ang_class = VitAngleClassifierCNN(base_model, num_out)
         else:
             raise ValueError("Unknown angleclassifier: " + type)
         return ang_class
