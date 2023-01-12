@@ -26,7 +26,6 @@ class VitAngleClassifierCNN(BaseAngleClassifier):
 
         self.fuse_conv = nn.Conv2d(4, 3, kernel_size=1, stride=1).cuda()
         self.angle_net = ResNet(BasicBlock, [1, 1, 1, 1], num_classes=out_channels)
-        print("asdf")
 
 
     def forward(self, x: Tensor) -> (Tensor, Tensor):

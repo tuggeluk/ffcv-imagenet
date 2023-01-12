@@ -49,6 +49,8 @@ class VitAngleClassifier(BaseAngleClassifier):
 
 
         self.fuse_conv = nn.Conv1d(4, 1, kernel_size=1, stride=1, bias=False)
+        self.fuse_conv2d = nn.Conv2d(4, 1, kernel_size=1, stride=1, bias=False)
+
 
         if isinstance(out_channels, list):
             self.fcs = nn.ModuleList()
@@ -59,15 +61,20 @@ class VitAngleClassifier(BaseAngleClassifier):
             self.fc = ch.nn.Linear(hidden_dim, out_channels)
             self.multi_out = False
 
-
     def forward(self, x: Tensor) -> (Tensor, Tensor):
         processed = list()
+
         for i in range(len(self.extract_list)):
-            processed.append(self.in_blocks[i](x[self.extract_list[i]])[:, 0])
+            processed.append(x[self.extract_list[i]])
 
         processed = ch.stack(processed, 1)
-        processed = self.fuse_conv(processed)
+        processed = self.fuse_conv2d(processed)
         processed = ch.squeeze(processed)
+
+        for i in range(len(self.extract_list)):
+            processed = self.in_blocks[i](processed)
+
+        processed = processed[:, 0]
 
         if self.multi_out:
             x_out_list = list()
@@ -78,6 +85,26 @@ class VitAngleClassifier(BaseAngleClassifier):
             x_out = self.fc(processed)
 
         return x_out
+
+
+    # def forward(self, x: Tensor) -> (Tensor, Tensor):
+    #     processed = list()
+    #     for i in range(len(self.extract_list)):
+    #         processed.append(self.in_blocks[i](x[self.extract_list[i]])[:, 0])
+    #
+    #     processed = ch.stack(processed, 1)
+    #     processed = self.fuse_conv(processed)
+    #     processed = ch.squeeze(processed)
+    #
+    #     if self.multi_out:
+    #         x_out_list = list()
+    #         for fc in self.fcs:
+    #             x_out_list.append(fc(processed))
+    #         x_out = tuple(x_out_list)
+    #     else:
+    #         x_out = self.fc(processed)
+    #
+    #     return x_out
 
     # def _create_downsample(self, in_size, out_size):
     #     if not in_size == out_size:

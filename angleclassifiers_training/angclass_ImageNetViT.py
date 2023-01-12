@@ -25,7 +25,7 @@ configs_dict["--logging.wandb_project"] = "train_angleclass_no_lossshapeViT"
 
 
 configs_dict["--angleclassifier.freeze_base"] = 1
-configs_dict["--lr.lr"] = 0.5
+configs_dict["--lr.lr"] = 0.1
 configs_dict["--training.load_from"] = ["random_rotate:0__arch:vit_b_16__no_mixup_cutmix"]
 configs_dict["--resolution.max_res"] = 224
 configs_dict["--resolution.min_res"] = 224
@@ -41,7 +41,7 @@ configs_dict["--angleclassifier.flatten"] = 'basic'
 configs_dict["--angle_testmode.corr_pred"] = [1]
 configs_dict["--angleclassifier.shape_class_loss"] = [0]
 configs_dict["--validation.resolution"] = 224
-configs_dict["--dist.port"] = 12255
+configs_dict["--dist.port"] = 12254
 
 configs_dict["--data.in_memory"] = 1
 configs_dict["--training.epochs"] = [33, 100]
