@@ -42,7 +42,7 @@ elif mode == "stanford300":
 elif mode == "oxford150":
     configs_dict["--data.train_dataset"] = "/home/ubuntu/OxfordPet_ffcv/train.ffcv"
     configs_dict["--data.val_dataset"] = "/home/ubuntu/OxfordPet_ffcv/val.ffcv"
-    checkpoints_basedir = "/home/ubuntu/ffcv-imagenet/logs"
+    checkpoints_basedir = "/home/ubuntu/ffcv-imagenet/logs/AngleClass150ep_OxfordPet"
     configs_dict["--dist.port"] = 12255
     configs_dict["--logging.wandb_project"] = "test_angleclass_oxfordpets"
     configs_dict["--data.dataset"] = "OxfordPet"
