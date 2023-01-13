@@ -1,0 +1,44 @@
+data:
+  in_memory: 1
+  num_workers: 12
+dist:
+  world_size: 1
+logging:
+  folder: /tmp/
+  log_level: 1
+  wandb_dryrun: 0
+  wandb_project: evaluate_angle_class_ViT
+  wandb_run: rn50_88_epoch_mask_rotate
+  wandb_batch_interval: 20
+model:
+  arch: vit_b_16
+validation:
+  batch_size: 128
+  resolution: 224
+  corner_mask: 1
+  random_rotate: 1
+  double_rotate: 0
+  p_flip_upright: 0
+  late_resize: -1
+angle_testmode:
+  standard: 1
+  corr_pred: 1
+angleclassifier:
+  freeze_base: 1
+  attach_upright_classifier: 1
+  attach_ang_classifier: 1
+  classifier_upright: vit
+  classifier_ang: vit
+  angle_binsize: ['lr', 3, 10, 90]
+  loss_scope: 2
+training:
+  load_from: logs/angle_classifiersViT/AngleclassViT33ep/final_weights.pt
+  #load_from: logs/rn18_base_configs/rn18_88_epochs_mask_rotate.yaml/final_weights.pt
+  eval_only: 1
+eval_configs:
+  angle_class: 1
+
+
+#python /cluster/home/tugg/rotation_module/ffcv-imagenet/train_imagenet.py --config-file configs/rn18_debug_configs/test_angle_class_ViT.yaml
+#--data.train_dataset=/home/ubuntu/ImageNet_ffcv/train.ffcv --data.val_dataset=/home/ubuntu/ImageNet_ffcv/val.ffcv --data.num_workers=8
+#--data.in_memory=1 --eval_configs.degree_interval=2 --logging.wandb_run=vit33ep --dist.port=12356
