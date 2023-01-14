@@ -858,6 +858,7 @@ class ImageNetTrainer:
                                 loss_ang = self.compute_angle_loss(output_up, output_ang, target_up, target_ang)
                                 self.val_meters['loss_angle'](loss_ang)
 
+                    #sum(target == ch.argmax(output_cls, 1)) / 128
                     if corr_pred:
                         assert attach_ang_classifier
                         # from PIL import Image
@@ -981,7 +982,7 @@ class ImageNetTrainer:
         y = np.arange(0, images[0].shape[1], 1) - np.floor(images[0].shape[1] / 2)
         xx, yy = np.meshgrid(x, y)
         mask = (np.sqrt((xx * xx) + (yy * yy)) - images[0].shape[0] / 2) > -3
-        images[:, mask, :] = 255
+        images[:, mask, :] = 0
         images = images.permute(0, 3, 1, 2)
         return images
 

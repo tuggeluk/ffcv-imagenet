@@ -39,6 +39,6 @@ eval_configs:
   angle_class: 1
 
 
-#python /cluster/home/tugg/rotation_module/ffcv-imagenet/train_imagenet.py --config-file configs/rn18_debug_configs/test_angle_class_ViT.yaml
-#--data.train_dataset=/home/ubuntu/ImageNet_ffcv/train.ffcv --data.val_dataset=/home/ubuntu/ImageNet_ffcv/val.ffcv --data.num_workers=8
-#--data.in_memory=1 --eval_configs.degree_interval=2 --logging.wandb_run=vit33ep --dist.port=12356
+#python train_imagenet.py --config-file configs/rn18_debug_configs/test_angle_class_ViT.yaml \
+#  --data.train_dataset=/home/ubuntu/ImageNet_ffcv/train.ffcv --data.val_dataset=/home/ubuntu/ImageNet_ffcv/val.ffcv \
+#  --data.num_workers=8 --data.in_memory=1 --eval_configs.degree_interval=2 --logging.wandb_run=vit33ep --dist.port=12356
