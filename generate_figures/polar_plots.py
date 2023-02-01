@@ -58,9 +58,9 @@ def generate_avg_plot(runs_df, top_x):
 
 
 def main():
-    #load data from wandb
-    print("")
     wandb_api = wandb.Api()
+
+    # ImageNet - ResNet
     entity, project = "tuggeluk", "evaluate_final_base_models_highres"
     runs = wandb_api.runs(entity + "/" + project)
 
@@ -99,7 +99,7 @@ def main():
     generate_avg_plot(runs_df, 'top_1')
 
     ind_models = ["resnet18", "resnet50"]
-    print("generate individual plot")
+
 
 
 
