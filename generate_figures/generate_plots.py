@@ -13,10 +13,18 @@ def get_train_history(run,top_1_name, top_5_name):
     return top_1, top_5
 
 def get_config(run):
-    load_from_rotate, arch, _ = run.name.split("__")
+    load_from_rotate = ""
+    arch = ""
 
-    load_from_rotate = load_from_rotate.split(":")[1]
-    arch = arch.split(":")[1]
+    for token in run.name.split("__"):
+        split = token.split(":")
+        if len(split) == 2:
+            name, val = split
+            if 'random_rotate' in name:
+                load_from_rotate = val
+
+            elif 'arch' in name:
+                arch = val
 
     return load_from_rotate, arch
 
@@ -65,8 +73,13 @@ def generate_polar_plot(urls, store_dir, wandb_api, restrict_arch=[]):
     for run in runs:
         if 'nonRotate' in run.name:
             continue
+
         load_from_rotate, arch = get_config(run)
         if len(restrict_arch) > 0 and not arch in restrict_arch:
+            continue
+
+        # only use good ViT runs
+        if 'vit_b_16' in arch and '_no_mixup_cutmix_' in run.name:
             continue
 
         if urls['max_ep'] == 3000:
@@ -106,23 +119,27 @@ def generate_plots():
 
     wandb_api = wandb.Api()
 
-    urls = {'ImageNet': dict(), 'ImageNet_ViT': dict(), 'StanfordCars': dict(), 'OxfordPet': dict()}
+    urls = dict()
 
+    urls['ImageNet'] = dict()
     urls['ImageNet']['base'] = ("tuggeluk", "evaluate_final_base_models_highres")
     urls['ImageNet']['max_ep'] = 100
     urls['ImageNet']['angleclass'] = ("tuggeluk", "evaluate_final_angle_class_highres")
     urls['ImageNet']['training'] = ("tuggeluk", "evaluate_final_base_models")
 
+    urls['ImageNet_ViT'] = dict()
     urls['ImageNet_ViT']['base'] = ("tuggeluk", "evaluate_final_base_models_highres_ViT")
     urls['ImageNet_ViT']['max_ep'] = 299
     urls['ImageNet_ViT']['angleclass'] = ("tuggeluk", "evaluate_angle_class_ViT")
     urls['ImageNet_ViT']['training'] = None
 
+    urls['StanfordCars'] = dict()
     urls['StanfordCars']['base'] = ("tuggeluk", "evaluate_final_base_models_highres_StanfordCars")
     urls['StanfordCars']['max_ep'] = 1000
     urls['StanfordCars']['angleclass'] = ("tuggeluk", "test_angleclass_stanfordcars")
     urls['StanfordCars']['training'] = None
 
+    urls['OxfordPet'] = dict()
     urls['OxfordPet']['base'] = ("tuggeluk", "evaluate_final_base_models_highres_OxfordPet")
     urls['OxfordPet']['max_ep'] = 3000
     urls['OxfordPet']['angleclass'] = ("tuggeluk", "test_angleclass_oxfordpets")

@@ -27,12 +27,11 @@ configs_dict["--data.in_memory"] = 1
 configs_dict["--data.dataset"] = 'OxfordPet'
 configs_dict["--logging.wandb_dryrun"] = 0
 configs_dict["--logging.wandb_project"] = "train_base_models_oxfordpet"
-configs_dict["--model.arch"] = ['resnet18', 'resnet50', 'resnet152', 'efficientnet_b0', 'efficientnet_b2', 'efficientnet_b4',
-                                'resnext50_32x4d', 'resnext101_32x8d']
+configs_dict["--model.arch"] = ['resnext50_32x4d']
 configs_dict["--training.random_rotate"] = [0, 1]
 #configs_dict["--model.arch"] = ['vit_b_32', 'vit_l_32']
 
-#configs_dict["--training.epochs"] = 1
+configs_dict["--training.epochs"] = 15000
 
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):
