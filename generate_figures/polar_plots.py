@@ -65,7 +65,6 @@ def main():
     runs = wandb_api.runs(entity + "/" + project)
 
     restrict_arch = []
-
     construct_df = dict()
     for run in runs:
         if 'nonRotate' in run.name:

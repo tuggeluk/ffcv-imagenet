@@ -1,7 +1,7 @@
 data:
   in_memory: 1
   num_workers: 12
-  val_dataset: /cluster/data/tugg/ImageNet_ffcv/val.ffcv
+  val_dataset: /home/ubuntu/OxfordPet_ffcv/val.ffcv
   #val_dataset: /home/tugg/Documents/Datasets/ImageNet_ffcv/debug.ffcv
 logging:
   log_folder: logs/eval_base_models_OxfordPet
