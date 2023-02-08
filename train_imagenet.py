@@ -800,6 +800,9 @@ class ImageNetTrainer:
                 for images, target in tqdm(self.val_loader):
                     target_up = target_ang = None
 
+                    # target_sanity = [12]*12 + [26]*12 + [81]*12 + [156]*12 + [421]*12 + [425]*12 + [494]*12
+                    # target = ch.tensor(target_sanity).cuda()
+
                     if isinstance(images, tuple):
                         images = tuple(x[:target.shape[0]] for x in images)
 
@@ -874,11 +877,35 @@ class ImageNetTrainer:
                         corr_imgs = self.rotate_images(corr_imgs, unrotate_from_orig)
                         corr_imgs = self.mask_corners(corr_imgs)
 
-                        # # create sanity-check image
+
+                        corr_imgs_normed = self.norm_images(corr_imgs, images.dtype)
+                        output_cls_corr_pred, ouput_up_corr_pred, ouput_ang_corr_pred = self.model(corr_imgs_normed)
+
+                        # # # create sanity-check image
                         # from PIL import Image
                         # orig_imgs_san = orig_imgs.clone().cpu()
                         # corr_imgs_san = corr_imgs.clone().cpu()
-                        # orig_imgs_san = self.mask_corners(orig_imgs_san.permute(0, 3, 1, 2))
+                        #
+                        # def get_color_tensor(corrects):
+                        #     red = ch.tensor((255, 0, 0))
+                        #     green = ch.tensor((102, 255, 102))
+                        #     cols = []
+                        #     for b in corrects:
+                        #         if b:
+                        #             cols.append(green)
+                        #         else:
+                        #             cols.append(red)
+                        #
+                        #     cols = ch.stack(cols)
+                        #     cols = cols.unsqueeze(1)
+                        #     cols = cols.to(dtype=ch.uint8)
+                        #     return cols
+                        #
+                        # correct = ch.argmax(output_cls_corr_pred, 1) == target
+                        # corr_imgs_san = self.mask_corners(corr_imgs_san, mask_col=get_color_tensor(correct))
+                        #
+                        # correct = ch.argmax(output_cls, 1) == target
+                        # orig_imgs_san = self.mask_corners(orig_imgs_san.permute(0, 3, 1, 2), mask_col=get_color_tensor(correct))
                         # orig_imgs_san = orig_imgs_san.numpy()
                         # corr_imgs_san = corr_imgs_san.numpy()
                         # target_san = target.clone().cpu().numpy()
@@ -889,11 +916,8 @@ class ImageNetTrainer:
                         #
                         #     Image.fromarray(np.concatenate([inps, corrs], axis=0).astype(np.uint8)).show()
                         #     Image.fromarray(np.concatenate([inps, corrs], axis=0).astype(np.uint8)).save(str(i)+"sanity.png")
-                        # # end sanity check image
+                        # # # end sanity check image
 
-
-                        corr_imgs = self.norm_images(corr_imgs, images.dtype)
-                        output_cls_corr_pred, ouput_up_corr_pred, ouput_ang_corr_pred = self.model(corr_imgs)
 
 
                         refine_predictions = False
@@ -976,13 +1000,13 @@ class ImageNetTrainer:
             images = ch.Tensor(images_np).to(self.gpu).type(images.dtype)
         return images
 
-    def mask_corners(self, images):
+    def mask_corners(self, images, mask_col=0):
         images = images.permute(0, 2, 3, 1)
         x = np.arange(0, images[0].shape[0], 1) - np.floor(images[0].shape[0] / 2)
         y = np.arange(0, images[0].shape[1], 1) - np.floor(images[0].shape[1] / 2)
         xx, yy = np.meshgrid(x, y)
         mask = (np.sqrt((xx * xx) + (yy * yy)) - images[0].shape[0] / 2) > -3
-        images[:, mask, :] = 0
+        images[:, mask, :] = mask_col
         images = images.permute(0, 3, 1, 2)
         return images
 
