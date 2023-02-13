@@ -42,10 +42,10 @@ def generate_avg_plot(runs_df, top_x, name='noName.svg', title='noTitle', store_
     fig, ax1 = plt.subplots(subplot_kw={'projection': 'polar'})
     x = np.arange(0, 361, 360/len(runs_df[top_x].iloc[0]))/180*np.pi
     #load_froms = ['0','1']
-    for load in load_froms:
+    for load in np.sort(load_froms):
             avg = get_avg_performance(runs_df, load, top_x)
             if load == '2':
-                label = "train-rotation:0 + angle-classifier"
+                label = "train-rotation:0 + mental-rot"
                 ls = ':'
                 co = 'tab:blue'
             else:
@@ -161,21 +161,21 @@ def generate_plots():
 
     for dataset, urls in urls.items():
 
-        name = dataset + 'Polar.png'
+        name = dataset + 'Polar.pdf'
         generate_polar_plot(urls, store_base_dir, name, wandb_api)
 
         if dataset in ['StanfordCars', 'OxfordPet']:
-            name = 'EfficientNets' + dataset + 'Polar.png'
+            name = 'EfficientNets' + dataset + 'Polar.pdf'
             generate_polar_plot(urls, store_base_dir, name, wandb_api,
                                 restrict_arch=['efficientnet_b4', 'efficientnet_b2', 'efficientnet_b0'],
                                 title_prefix="EfficientNet ")
 
-            name = 'ResNets' + dataset + 'Polar.png'
+            name = 'ResNets' + dataset + 'Polar.pdf'
             generate_polar_plot(urls, store_base_dir, name, wandb_api,
                                 restrict_arch=['resnet18', 'resnet50', 'resnet152'],
                                 title_prefix="ResNet ")
 
-            name = 'ResNeXts' + dataset + 'Polar.png'
+            name = 'ResNeXts' + dataset + 'Polar.pdf'
             generate_polar_plot(urls, store_base_dir, name, wandb_api,
                                 restrict_arch=['resnext50_32x4d', 'resnext101_32x8d'],
                                 title_prefix="ResNeXt ")
