@@ -16,17 +16,20 @@ def get_config(run):
     load_from_rotate = ""
     arch = ""
 
-    for token in run.name.split("__"):
-        split = token.split(":")
-        if len(split) == 2:
-            name, val = split
-            if 'random_rotate' in name:
-                load_from_rotate = val
+    if '__' not in run.name:
+        arch = run.name
+    else:
+        for token in run.name.split("__"):
+            split = token.split(":")
+            if len(split) == 2:
+                name, val = split
+                if 'random_rotate' in name:
+                    load_from_rotate = val
 
-            elif 'arch' in name:
-                arch = val
-        elif len(split) > 2:
-            arch = split[-1]
+                elif 'arch' in name:
+                    arch = val
+            elif len(split) > 2:
+                arch = split[-1]
 
     return load_from_rotate, arch
 
@@ -41,6 +44,7 @@ def generate_avg_plot(runs_df, top_x, name='noName.svg', title='noTitle', store_
     load_froms = runs_df.load_from_rotate.unique()
     fig, ax1 = plt.subplots(subplot_kw={'projection': 'polar'})
     x = np.arange(0, 361, 360/len(runs_df[top_x].iloc[0]))/180*np.pi
+    max_val = 0
     #load_froms = ['0','1']
     for load in np.sort(load_froms):
             avg = get_avg_performance(runs_df, load, top_x)
@@ -57,23 +61,31 @@ def generate_avg_plot(runs_df, top_x, name='noName.svg', title='noTitle', store_
                     ls = '-.'
                     co = 'tab:green'
 
-            ax1.plot(x, avg, label=label, ls=ls, color=co)
-    ax1.set_title(title)
+            ax1.plot(x, avg, label=label, ls=ls, color=co, linewidth = 3)
+            if max(avg) > max_val:
+                max_val = max(avg)
+    ax1.set_title(title, fontsize=22)
     # ax1.set_ylabel(top_x + ' accuracy')
     # ax1.set_xlabel('degree')
-    ax1.set_theta_direction(-1)
-    ax1.set_theta_offset(np.pi / 2.0)
-    ax1.set_rlabel_position(85)
+    #ax1.set_theta_direction(-1)
+    #ax1.set_theta_offset(np.pi / 2.0)
+    ax1.set_rlabel_position(170)
     ax1.grid(True)
 
+    # for label in ax1.yaxis.get_ticklabels()[1::2]:
+    #     label.set_visible(False)
+    #plt.yticks(np.arange(0, max_val + 0.5, 0.25))
+    ax1.yaxis.set_tick_params(labelsize=14)
+    ax1.xaxis.set_tick_params(labelsize=15, pad=10)
     pos = ax1.get_position()
     ax1.set_position([pos.x0, pos.y0, pos.width, pos.height])
-    ax1.legend(loc='lower center', bbox_to_anchor=(0.5, -0.2), ncol=3)
+    #ax1.legend(loc='lower center', bbox_to_anchor=(0.5, -0.2), ncol=3)
 
     if not store_dir is None:
         plt.savefig(os.path.join(store_dir, name), bbox_inches='tight')
     if show:
         plt.show()
+
 
 
 def generate_polar_plot(urls, store_dir, name, wandb_api, restrict_arch=[], title_prefix =""):
@@ -103,6 +115,8 @@ def generate_polar_plot(urls, store_dir, name, wandb_api, restrict_arch=[], titl
     for run in runs:
 
         load_from_rotate, arch = get_config(run)
+        print(arch)
+        print(restrict_arch)
         if len(restrict_arch) > 0 and not arch in restrict_arch:
             continue
 
@@ -114,7 +128,13 @@ def generate_polar_plot(urls, store_dir, name, wandb_api, restrict_arch=[], titl
     runs_df.index = ["load_from_rotate", "arch", "top_1", "top_5"]
     runs_df = runs_df.transpose()
 
-    generate_avg_plot(runs_df, 'top_1', name=name, title=title_prefix + urls["plot_title"], store_dir=store_dir, show=True)
+    # cut out all cnns
+    if len(title_prefix) > 0:
+        base_name = urls["plot_title"][:-11]
+    else:
+        base_name = urls["plot_title"]
+
+    generate_avg_plot(runs_df, 'top_1', name=name, title=base_name + title_prefix, store_dir=store_dir, show=True)
 
 
 
@@ -131,14 +151,14 @@ def generate_plots():
     urls['ImageNet']['max_ep'] = 100
     urls['ImageNet']['angleclass'] = ("tuggeluk", "evaluate_final_angle_class_highres")
     urls['ImageNet']['training'] = ("tuggeluk", "evaluate_final_base_models")
-    urls['ImageNet']['plot_title'] = ("ImageNet top 1 Accuracy per Rotation Angle")
+    urls['ImageNet']['plot_title'] = ("ImageNet - all CNNs")
 
     urls['ImageNetViT'] = dict()
     urls['ImageNetViT']['base'] = ("tuggeluk", "evaluate_final_base_models_highres_ViT")
     urls['ImageNetViT']['max_ep'] = 299
     urls['ImageNetViT']['angleclass'] = ("tuggeluk", "evaluate_angle_class_ViT")
     urls['ImageNetViT']['training'] = None
-    urls['ImageNetViT']['plot_title'] = ("ImageNet top 1 Accuracy per Rotation Angle for ViT-16")
+    urls['ImageNetViT']['plot_title'] = ("ImageNet - ViT-16")
 
 
     urls['StanfordCars'] = dict()
@@ -146,7 +166,7 @@ def generate_plots():
     urls['StanfordCars']['max_ep'] = 1000
     urls['StanfordCars']['angleclass'] = ("tuggeluk", "test_angleclass_stanfordcars")
     urls['StanfordCars']['training'] = None
-    urls['StanfordCars']['plot_title'] = ("Stanford Cars top 1 Accuracy per Rotation Angle")
+    urls['StanfordCars']['plot_title'] = ("Stanford Cars - all CNNs")
 
 
     urls['OxfordPet'] = dict()
@@ -154,7 +174,7 @@ def generate_plots():
     urls['OxfordPet']['max_ep'] = 3000
     urls['OxfordPet']['angleclass'] = ("tuggeluk", "test_angleclass_oxfordpets")
     urls['OxfordPet']['training'] = None
-    urls['OxfordPet']['plot_title'] = ("Oxford Pet top 1 Accuracy per Rotation Angle")
+    urls['OxfordPet']['plot_title'] = ("Oxford Pet - all CNNs")
 
     if not os.path.exists(store_base_dir):
         os.makedirs(store_base_dir)
@@ -164,21 +184,21 @@ def generate_plots():
         name = dataset + 'Polar.pdf'
         generate_polar_plot(urls, store_base_dir, name, wandb_api)
 
-        if dataset in ['StanfordCars', 'OxfordPet']:
+        if dataset in ['ImageNet', 'StanfordCars', 'OxfordPet']:
             name = 'EfficientNets' + dataset + 'Polar.pdf'
             generate_polar_plot(urls, store_base_dir, name, wandb_api,
                                 restrict_arch=['efficientnet_b4', 'efficientnet_b2', 'efficientnet_b0'],
-                                title_prefix="EfficientNet ")
+                                title_prefix=" - EfficientNets ")
 
             name = 'ResNets' + dataset + 'Polar.pdf'
             generate_polar_plot(urls, store_base_dir, name, wandb_api,
                                 restrict_arch=['resnet18', 'resnet50', 'resnet152'],
-                                title_prefix="ResNet ")
+                                title_prefix=" - ResNets ")
 
             name = 'ResNeXts' + dataset + 'Polar.pdf'
             generate_polar_plot(urls, store_base_dir, name, wandb_api,
                                 restrict_arch=['resnext50_32x4d', 'resnext101_32x8d'],
-                                title_prefix="ResNeXt ")
+                                title_prefix=" - ResNeXts ")
 
 
 if __name__ == '__main__':

@@ -106,7 +106,7 @@ class DeepAngleClassifier(BaseAngleClassifier):
                 nn.init.constant_(m.bias, 0)
 
 
-    def forward(self, x: Tensor) -> (Tensor, Tensor):
+    def forward(self, x: Tensor) -> (Tensor,Tensor):
 
         x_out = self.layer1(self.dsmx_in(x[self.extract_list[0]].type(ch.float)))
         x_out = self.ds1_merge(ch.cat((x_out, self.ds1_in(x[self.extract_list[1]].type(ch.float))), 1))

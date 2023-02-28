@@ -793,6 +793,8 @@ class ImageNetTrainer:
         model = self.model
         model.eval()
 
+
+        #ch.save(model,'ResNet50AMR300.chkp')
         errs_mod_90 = None
 
         with ch.no_grad():
