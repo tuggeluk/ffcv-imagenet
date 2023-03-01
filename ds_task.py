@@ -78,7 +78,9 @@ def criterion(inputs, target):
 
 def evaluate(model, data_loader, device, num_classes, preprocess, class_to_idx, model_amr):
     model.eval()
-    confmat = utils.ConfusionMatrix(num_classes)
+    confmat_upright = utils.ConfusionMatrix(num_classes)
+    confmat_random_rot = utils.ConfusionMatrix(num_classes)
+    confmat_amr = utils.ConfusionMatrix(num_classes)
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = "Test:"
     num_processed_samples = 0
@@ -89,29 +91,104 @@ def evaluate(model, data_loader, device, num_classes, preprocess, class_to_idx, 
     conversion = T.ConvertImageDtype(torch.float)
     normalizer = T.Normalize(mean=mean, std=std)
 
+    def de_normalize(image):
+        return (torch.permute(image, (0, 2, 3, 1)) * std + mean) * 256
+
+    def random_rotate(image, angle=-1, interpolation=InterpolationMode.BILINEAR):
+        image = torch.permute(image, (0,3,1,2))
+        if angle == -1:
+            angle = np.random.randint(0, 359)
+
+        image = F.rotate(image, int(angle), interpolation=interpolation)
+        image = torch.permute(image, (0,2,3,1))
+        return image
+
+    # hardcode mask size for speedup
+    x = np.arange(0, 520, 1) - np.floor(520 / 2)
+    y = np.arange(0, 520, 1) - np.floor(520 / 2)
+    xx, yy = np.meshgrid(x, y)
+    mask = (np.sqrt((xx * xx) + (yy * yy)) - 520 / 2) > -3
+    def mask_corners(image):
+        image[:, mask ,:] = 0
+        return image
+
+    def normalize(image):
+        return normalizer(conversion(torch.permute(image,(0,3,1,2))/256))
 
     with torch.inference_mode():
         for image, target in metric_logger.log_every(data_loader, 100, header):
 
-            de_normalized = (torch.permute(image, (0, 2, 3, 1)) * std + mean) * 256
-            # from PIL import Image
-            # Image.fromarray(de_normalized[0].type(torch.uint8).numpy()).show()
-            # preprocess image
+            image_upright = image.clone()
+            image_upright = de_normalize(image_upright)
+            image_upright = mask_corners(image_upright)
+            image_upright = normalize(image_upright)
 
+            target_upright = mask_corners(torch.permute(target.clone(), (0,2,3,1)))
 
+            image_upright, target_upright = image_upright.to(device), target_upright.to(device)
+            output_upright = model(image_upright)
+            output_upright = output_upright["out"]
 
-
-
-            image, target = image.to(device), target.to(device)
-            output = model(image)
-            output = output["out"]
-
-            confmat.update(target.flatten(), output.argmax(1).flatten())
+            confmat_upright.update(target_upright.flatten(), output_upright.argmax(1).flatten())
             # FIXME need to take into account that the datasets
             # could have been padded in distributed setup
+
+            angle = np.random.randint(0, 359)
+            image_rot = image.clone()
+            image_rot = de_normalize(image_rot)
+            image_rot = random_rotate(image=image_rot, angle=angle, interpolation=InterpolationMode.BILINEAR)
+            image_rot = mask_corners(image_rot)
+            image_rot = normalize(image_rot)
+
+            target_rot = mask_corners(torch.permute(target.clone(), (0,2,3,1)))
+            target_rot = random_rotate(image=target_rot, angle=angle, interpolation=InterpolationMode.NEAREST)
+
+            image_rot, target_rot = image_rot.to(device), target_rot.to(device)
+            output_rot = model(image_rot)
+            output_rot = output_rot["out"]
+
+            confmat_random_rot.update(target_rot.flatten(), output_rot.argmax(1).flatten())
+
+            # Find Angle
+            _, _, amr_ang = model_amr(image_rot)
+
+            # Compute correction angle
+            unrotate_ang = (360 - torch.argmax(amr_ang, 1))
+            # Unrotate -based off original image
+            unrotate_from_orig = (angle + unrotate_ang) % 360
+
+
+            image_amr = image.clone()
+            image_amr = de_normalize(image_amr)
+            image_amr = random_rotate(image=image_amr, angle=unrotate_from_orig, interpolation=InterpolationMode.BILINEAR)
+            image_amr = mask_corners(image_amr)
+            image_amr = normalize(image_amr)
+
+            target_amr = mask_corners(torch.permute(target.clone(), (0,2,3,1)))
+            target_amr = random_rotate(image=target_amr, angle=unrotate_from_orig, interpolation=InterpolationMode.NEAREST)
+
+            image_amr, target_amr = image_amr.to(device), target_amr.to(device)
+            output_amr = model(image_amr)
+            output_amr = output_amr["out"]
+
+            confmat_amr.update(target_amr.flatten(), output_amr.argmax(1).flatten())
+
+
+
+
+            # from PIL import Image
+            # to_pil_image(image[0]).show()
+            # to_pil_image(target[0]).show()
+            # Image.fromarray(de_normalized.type(torch.uint8).numpy()[0]).show()
+            # Image.fromarray(target_masked.type(torch.uint8).numpy()[0].squeeze()).show()
+            # to_pil_image(image_normalized[0]).show()
+            # preprocess image
+
             num_processed_samples += image.shape[0]
 
-        confmat.reduce_from_all_processes()
+        confmat_upright.reduce_from_all_processes()
+        confmat_random_rot.reduce_from_all_processes()
+        confmat_amr.reduce_from_all_processes()
 
     num_processed_samples = utils.reduce_across_processes(num_processed_samples)
     if (
@@ -127,7 +204,7 @@ def evaluate(model, data_loader, device, num_classes, preprocess, class_to_idx, 
             "Setting the world size to 1 is always a safe bet."
         )
 
-    return confmat
+    return confmat_upright, confmat_random_rot, confmat_amr
 
 
 def main(args):
@@ -165,9 +242,11 @@ def main(args):
     # We disable the cudnn benchmarking because it can noticeably affect the accuracy
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
-    confmat = evaluate(model, data_loader_test, device=device, num_classes=num_classes, preprocess = preprocess,
+    confmat_upright, confmat_random_rot, confmat_amr = evaluate(model, data_loader_test, device=device, num_classes=num_classes, preprocess = preprocess,
                        class_to_idx = class_to_idx, model_amr=model_amr)
-    print(confmat)
+    print(confmat_upright)
+    print(confmat_random_rot)
+    print(confmat_amr)
 
 
 

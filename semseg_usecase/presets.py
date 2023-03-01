@@ -37,7 +37,7 @@ class SegmentationPresetEval:
         )
         self.transforms_target = T.Compose(
             [
-                T.Resize((base_size, base_size)),
+                T.Resize((base_size, base_size),interpolation=T.InterpolationMode.NEAREST, antialias=False),
                 T.PILToTensor(),
             ]
         )
