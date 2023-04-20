@@ -37,8 +37,16 @@ elif mode == "stanford300":
     # configs_dict["--data.dataset"] = "StanfordCars"
     # run_name_prefix = "300ep_"
 
-    configs_dict["--data.train_dataset"] = "/home/tugg/Documents/Datasets/Stanford_ffcv/train.ffcv"
-    configs_dict["--data.val_dataset"] = "/home/tugg/Documents/Datasets/Stanford_ffcv/val.ffcv"
+    # configs_dict["--data.train_dataset"] = "/home/tugg/Documents/Datasets/Stanford_ffcv/train.ffcv"
+    # configs_dict["--data.val_dataset"] = "/home/tugg/Documents/Datasets/Stanford_ffcv/val.ffcv"
+    # checkpoints_basedir = "logs/AngleClass300ep_StanfordCars"
+    # configs_dict["--dist.port"] = 12254
+    # configs_dict["--logging.wandb_project"] = "test_angleclass_stanfordcars_debug"
+    # configs_dict["--data.dataset"] = "StanfordCars"
+    # run_name_prefix = "300ep_"
+
+    configs_dict["--data.train_dataset"] = "/home/ubuntu/Stanford_ffcv/train.ffcv"
+    configs_dict["--data.val_dataset"] = "/home/ubuntu/Stanford_ffcv/val.ffcv"
     checkpoints_basedir = "logs/AngleClass300ep_StanfordCars"
     configs_dict["--dist.port"] = 12254
     configs_dict["--logging.wandb_project"] = "test_angleclass_stanfordcars_debug"
