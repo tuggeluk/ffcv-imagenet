@@ -8,6 +8,7 @@ from torchvision.models.efficientnet import EfficientNet
 from torchvision.models.vision_transformer import VisionTransformer
 from collections import OrderedDict
 from torch.nn.modules.batchnorm import BatchNorm2d
+import wandb
 
 class AngleClassifierWrapper(ch.nn.Module):
     """Transform using the given torch.nn.Module
@@ -116,7 +117,7 @@ class AngleClassifierWrapper(ch.nn.Module):
         # if not self.transformer_mode:
         #     out = x
         out = x
-
+        wandb.log(extracted_ang_tensors)
 
         up_ang = out_ang = None
         if self.up_class is not None:

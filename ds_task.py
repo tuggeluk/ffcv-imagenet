@@ -40,7 +40,8 @@ import torchvision.transforms as T
 import numpy as np
 from torchvision.transforms.functional import to_pil_image
 from torchvision.transforms import functional as F, InterpolationMode
-
+from torchvision.utils import draw_segmentation_masks
+from PIL import Image
 
 def get_dataset(dir_path, name, image_set, transform):
     def sbd(*args, **kwargs):
@@ -73,6 +74,34 @@ def criterion(inputs, target):
         return losses["out"]
 
     return losses["out"] + 0.5 * losses["aux"]
+
+
+def save_visualizations(input, output, groundtruth, name_prefix, path="semseg_usecase/images_out"):
+
+    def generate_all_classes_mask(output):
+        normalized_masks = torch.nn.functional.softmax(output, dim=1)
+        num_classes = normalized_masks.shape[1]
+        masks = normalized_masks[0]
+        class_dim = 0
+        all_classes_masks = masks.argmax(class_dim) == torch.arange(num_classes)[:, None, None]
+        return all_classes_masks
+
+
+    Image.fromarray(input[0].numpy().astype(np.uint8)).save(os.path.join(path, name_prefix+'inp.png'))
+
+    input = torch.permute(input[0], (2, 0, 1)).type(torch.uint8)
+
+    all_classes_masks_pred = generate_all_classes_mask(output)
+    with_all_masks_pred = draw_segmentation_masks(input, masks=all_classes_masks_pred, alpha=.6)
+    F.to_pil_image(with_all_masks_pred).save(os.path.join(path, name_prefix+'pred.png'))
+
+    # groundtruth_back = groundtruth.clone()
+    # groundtruth = groundtruth_back.clone()
+
+    groundtruth[groundtruth == 255] = 0
+    groundtruth = torch.nn.functional.one_hot(groundtruth.squeeze().long(), num_classes=21).bool().permute(2, 0, 1)
+    with_all_masks_gt = draw_segmentation_masks(input, masks=groundtruth, alpha=.6)
+    F.to_pil_image(with_all_masks_gt).save(os.path.join(path, name_prefix+'gt.png'))
 
 
 
@@ -132,8 +161,12 @@ def evaluate(model, data_loader, device, num_classes, preprocess, class_to_idx, 
             confmat_upright.update(target_upright.flatten(), output_upright.argmax(1).flatten())
             # FIXME need to take into account that the datasets
             # could have been padded in distributed setup
+            save_visualizations(de_normalize(image_upright.detach().cpu()), output_upright.detach().cpu(),
+                                target_upright.detach().cpu(),
+                                str(num_processed_samples)+"_upright_")
 
-            angle = np.random.randint(0, 359)
+
+            angle = np.random.randint(80, 270)
             image_rot = image.clone()
             image_rot = de_normalize(image_rot)
             image_rot = random_rotate(image=image_rot, angle=angle, interpolation=InterpolationMode.BILINEAR)
@@ -148,6 +181,10 @@ def evaluate(model, data_loader, device, num_classes, preprocess, class_to_idx, 
             output_rot = output_rot["out"]
 
             confmat_random_rot.update(target_rot.flatten(), output_rot.argmax(1).flatten())
+
+            save_visualizations(de_normalize(image_rot.detach().cpu()), output_rot.detach().cpu(),
+                                target_rot.detach().cpu(),
+                                str(num_processed_samples)+"_rot_")
 
             # Find Angle
             _, _, amr_ang = model_amr(image_rot)
@@ -173,7 +210,9 @@ def evaluate(model, data_loader, device, num_classes, preprocess, class_to_idx, 
 
             confmat_amr.update(target_amr.flatten(), output_amr.argmax(1).flatten())
 
-
+            save_visualizations(de_normalize(image_amr.detach().cpu()), output_amr.detach().cpu(),
+                                target_amr.detach().cpu(),
+                                str(num_processed_samples)+"_amr_")
 
 
             # from PIL import Image

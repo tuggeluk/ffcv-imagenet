@@ -12,14 +12,12 @@ configs_dict = OrderedDict()
 # Command for ImagenetViT
 
 
-
-
 # python /cluster/home/tugg/rotation_module/ffcv-imagenet/train_imagenet.py --config-file configs/rn18_debug_configs/test_angle_class_base.yaml
 # --data.train_dataset=/cluster/data/tugg/ImageNet_ffcv/train.ffcv --data.val_dataset=/cluster/data/tugg/ImageNet_ffcv/val.ffcv --data.num_workers=8
 # --data.in_memory=1 --training.load_from=logs/AngleClass_no_losshape/load_from:random_rotate:0__arch:resnet18____classifier_upright:deep__classifier_ang:deep__corr_pred:1__shape_class_loss:0__epochs:33__/final_weights.pt
 # --model.arch=resnet18 --eval_configs.degree_interval=2 --logging.wandb_run=resnet18 --dist.port=12356
 
-mode = "stanford50"
+mode = "stanford300"
 
 if mode == "stanford50":
     configs_dict["--data.train_dataset"] = "/home/ubuntu/Stanford_ffcv/train.ffcv"
@@ -31,11 +29,19 @@ if mode == "stanford50":
     run_name_prefix = "50ep_"
 
 elif mode == "stanford300":
-    configs_dict["--data.train_dataset"] = "/home/ubuntu/Stanford_ffcv/train.ffcv"
-    configs_dict["--data.val_dataset"] = "/home/ubuntu/Stanford_ffcv/val.ffcv"
-    checkpoints_basedir = "/home/ubuntu/ffcv-imagenet/logs/AngleClass300ep_StanfordCars"
+    # configs_dict["--data.train_dataset"] = "/home/ubuntu/Stanford_ffcv/train.ffcv"
+    # configs_dict["--data.val_dataset"] = "/home/ubuntu/Stanford_ffcv/val.ffcv"
+    # checkpoints_basedir = "/home/ubuntu/ffcv-imagenet/logs/AngleClass300ep_StanfordCars"
+    # configs_dict["--dist.port"] = 12254
+    # configs_dict["--logging.wandb_project"] = "test_angleclass_stanfordcars"
+    # configs_dict["--data.dataset"] = "StanfordCars"
+    # run_name_prefix = "300ep_"
+
+    configs_dict["--data.train_dataset"] = "/home/tugg/Documents/Datasets/Stanford_ffcv/train.ffcv"
+    configs_dict["--data.val_dataset"] = "/home/tugg/Documents/Datasets/Stanford_ffcv/val.ffcv"
+    checkpoints_basedir = "logs/AngleClass300ep_StanfordCars"
     configs_dict["--dist.port"] = 12254
-    configs_dict["--logging.wandb_project"] = "test_angleclass_stanfordcars"
+    configs_dict["--logging.wandb_project"] = "test_angleclass_stanfordcars_debug"
     configs_dict["--data.dataset"] = "StanfordCars"
     run_name_prefix = "300ep_"
 
@@ -76,14 +82,14 @@ configs_dict["--eval_configs.degree_interval"] = 2
 configs_dict["--angleclassifier.flatten"] = 'basic'
 
 configs_dict["--training.load_from"] = [
-"load_from:arch:efficientnet_b0__random_rotate:0",
-"load_from:arch:efficientnet_b2__random_rotate:0",
-"load_from:arch:efficientnet_b4__random_rotate:0",
+#"load_from:arch:efficientnet_b0__random_rotate:0",
+#"load_from:arch:efficientnet_b2__random_rotate:0",
+#"load_from:arch:efficientnet_b4__random_rotate:0",
 "load_from:arch:resnet152__random_rotate:0",
 "load_from:arch:resnet18__random_rotate:0",
-"load_from:arch:resnet50__random_rotate:0",
-"load_from:arch:resnext101_32x8d__random_rotate:0",
-"load_from:arch:resnext50_32x4d__random_rotate:0",
+#"load_from:arch:resnet50__random_rotate:0",
+#"load_from:arch:resnext101_32x8d__random_rotate:0",
+#"load_from:arch:resnext50_32x4d__random_rotate:0",
 ]
 
 
