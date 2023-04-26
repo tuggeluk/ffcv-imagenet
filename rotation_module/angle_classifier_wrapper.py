@@ -117,7 +117,7 @@ class AngleClassifierWrapper(ch.nn.Module):
         # if not self.transformer_mode:
         #     out = x
         out = x
-        wandb.log(extracted_ang_tensors)
+        #wandb.log(extracted_ang_tensors)
 
         up_ang = out_ang = None
         if self.up_class is not None:

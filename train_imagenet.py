@@ -836,6 +836,7 @@ class ImageNetTrainer:
 
 
                     output_cls, output_up, output_ang = self.model(images)
+                    #wandb.log(output_ang)
 
                     if standard:
                         #if loss_scope == 0 or loss_scope == 2:
