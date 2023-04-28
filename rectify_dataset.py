@@ -165,8 +165,8 @@ def get_args_parser(add_help=True):
 
     parser = argparse.ArgumentParser(description="PyTorch Segmentation Training", add_help=add_help)
 
-    parser.add_argument("--data_path", default="/home/ubuntu/ImageNet/val", type=str, help="dataset path")
-    parser.add_argument("--data_out", default="/home/ubuntu/ImageNet_ffcv/val_rec.ffcv", type=str, help="path to save rectified datasets")
+    parser.add_argument("--data_path", default="/cluster/data/amir/ImageNet/ImageNet1k/ImageNet/val", type=str, help="dataset path")
+    parser.add_argument("--data_out", default="/cluster/data/tugg/ImageNet_ffcv/val_rec.ffcv", type=str, help="path to save rectified datasets")
 
 
 
