@@ -147,7 +147,7 @@ def main(args):
 
     writer = DatasetWriter(args.data_out, {
         'image': RGBImageField(write_mode="smart",
-                               max_resolution=500,
+                               max_resolution=256,
                                compress_probability=0.5,
                                jpeg_quality=90),
         'label': IntField(),
