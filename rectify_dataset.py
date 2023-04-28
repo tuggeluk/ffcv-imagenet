@@ -98,7 +98,8 @@ class RectImageFolder(ImageFolder):
 
 
     def rectify_img(self, image):
-        print(image.shape)
+        import pdb
+        pdb.set_trace()
         im_masked = self.mask_corners(np.array(image))
         im_norm = self.normalizer(self.conversion(self.to_tens(im_masked)))
 
