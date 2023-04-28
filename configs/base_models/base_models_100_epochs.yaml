@@ -1,6 +1,6 @@
 data:
   in_memory: 1
-  num_workers: 12
+  num_workers: 5
 dist:
   world_size: 1
 logging:
