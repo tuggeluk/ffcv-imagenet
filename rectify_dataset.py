@@ -98,8 +98,8 @@ class RectImageFolder(ImageFolder):
 
 
     def rectify_img(self, image):
-        print("asdf")
-        print(image.size)
+        # print("asdf")
+        # print(image.size)
         image = image.resize((256, 256), Image.Resampling.BILINEAR)
 
         im_masked = self.mask_corners(np.array(image))
