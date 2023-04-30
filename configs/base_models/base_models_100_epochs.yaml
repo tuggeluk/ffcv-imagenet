@@ -1,8 +1,8 @@
 data:
   in_memory: 1
-  num_workers: 5
+  num_workers: 12
 dist:
-  world_size: 1
+  world_size: 4
 logging:
   folder: /tmp/
 lr:
