@@ -33,7 +33,9 @@ configs_dict["--training.random_rotate"] = [0, 1]
 
 configs_dict["--training.epochs"] = 1500
 configs_dict["--dist.world_size"] = 1
-
+configs_dict["--resolution.min_res"] = 100
+configs_dict["--resolution.max_res"] = 100
+configs_dict["--validation.resolution"] = 100
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):
         commands[i] = command + append
