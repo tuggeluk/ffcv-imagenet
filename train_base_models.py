@@ -16,22 +16,23 @@ if on_dgx:
     run_name_prefix = ""
 else:
     configs_dict["--config-file"] = "configs/base_models/base_models_100_epochs.yaml"
-    configs_dict["--data.train_dataset"] = "/home/ubuntu/OxfordPet_ffcv/train.ffcv"
-    configs_dict["--data.val_dataset"] = "/home/ubuntu/OxfordPet_ffcv/val.ffcv"
-    logging_basedir = "/home/ubuntu/ffcv-imagenet/logs/base_models_oxfordpet"
+    configs_dict["--data.train_dataset"] = "../MNIST_ffcv/mnist_train.ffcv"
+    configs_dict["--data.val_dataset"] = "../MNIST_ffcv/mnist_test.ffcv"
+    logging_basedir = "logs/base_models_MNIST"
     run_name_prefix = ""
 
 
-configs_dict["--data.num_workers"] = 12
+configs_dict["--data.num_workers"] = 5
 configs_dict["--data.in_memory"] = 1
-configs_dict["--data.dataset"] = 'OxfordPet'
+configs_dict["--data.dataset"] = 'MNIST'
 configs_dict["--logging.wandb_dryrun"] = 0
-configs_dict["--logging.wandb_project"] = "train_base_models_oxfordpet"
-configs_dict["--model.arch"] = ['resnext50_32x4d']
+configs_dict["--logging.wandb_project"] = "train_base_models_MNIST"
+configs_dict["--model.arch"] = ['resnet18']
 configs_dict["--training.random_rotate"] = [0, 1]
 #configs_dict["--model.arch"] = ['vit_b_32', 'vit_l_32']
 
-configs_dict["--training.epochs"] = 15000
+configs_dict["--training.epochs"] = 1500
+configs_dict["--dist.world_size"] = 1
 
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):

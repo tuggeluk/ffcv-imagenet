@@ -1,7 +1,7 @@
 from torch.utils.data import Subset
 from ffcv.writer import DatasetWriter
 from ffcv.fields import IntField, RGBImageField
-from torchvision.datasets import CIFAR10, ImageFolder, StanfordCars, OxfordIIITPet
+from torchvision.datasets import CIFAR10, ImageFolder, StanfordCars, OxfordIIITPet, MNIST
 
 from argparse import ArgumentParser
 from fastargs import Section, Param
@@ -10,7 +10,7 @@ from fastargs.decorators import param, section
 from fastargs import get_current_config
 
 Section('cfg', 'arguments to give the writer').params(
-    dataset=Param(And(str, OneOf(['cifar', 'imagenet', 'stanfordcars', 'imagenet_sanitycheck', 'oxfordpet'])), 'Which dataset to write', default='imagenet'),
+    dataset=Param(And(str, OneOf(['cifar', 'imagenet', 'stanfordcars', 'imagenet_sanitycheck', 'oxfordpet', 'mnist'])), 'Which dataset to write', default='imagenet'),
     split=Param(And(str, OneOf(['train', 'val', 'test', 'trainval'])), 'Train or val set', required=True),
     data_dir=Param(str, 'Where to find the PyTorch dataset', required=True),
     write_path=Param(str, 'Where to write the new dataset', required=True),
@@ -44,6 +44,14 @@ def main(dataset, split, data_dir, write_path, max_resolution, num_workers,
         my_dataset = OxfordIIITPet(root=data_dir, split=split, download=True)
     elif dataset == 'cifar':
         my_dataset = CIFAR10(root=data_dir, train=(split == 'train'), download=True)
+    elif dataset == 'mnist':
+        def resize_center(im):
+            import PIL
+            im = im.resize((84, 84), PIL.Image.Resampling.BICUBIC)
+            result = PIL.Image.new(im.mode, (100, 100), (0))
+            result.paste(im, (8,8))
+            return result.convert('RGB')
+        my_dataset = MNIST(root=data_dir, train = (split == 'train'), download=True, transform=resize_center)
     elif dataset == 'imagenet':
         my_dataset = ImageFolder(root=data_dir)
     else:

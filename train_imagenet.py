@@ -83,7 +83,7 @@ Section('data', 'data related stuff').params(
     val_dataset=Param(str, '.dat file to use for validation', required=True),
     num_workers=Param(int, 'The number of workers', required=True),
     in_memory=Param(int, 'does the dataset fit in memory? (1/0)', required=True),
-    dataset=Param(OneOf(['ImageNet', 'StanfordCars', 'OxfordPet']), '.dat file to use for training', default='ImageNet')
+    dataset=Param(OneOf(['ImageNet', 'StanfordCars', 'OxfordPet','MNIST']), '.dat file to use for training', default='ImageNet')
 )
 
 Section('lr', 'lr scheduling').params(
@@ -530,6 +530,8 @@ class ImageNetTrainer:
             n_cls = 196
         elif dataset == 'OxfordPet':
             n_cls = 37
+        elif dataset == 'MNIST':
+            n_cls = 10
 
         model = getattr(models, arch)(pretrained=pretrained, num_classes=n_cls)
         def apply_blurpool(mod: ch.nn.Module):
