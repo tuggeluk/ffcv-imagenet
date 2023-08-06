@@ -17,7 +17,7 @@ logging_basedir = "/home/ubuntu/rotation_module/ffcv-imagenet/logs/train_anglecl
 run_name_prefix = ""
 
 
-configs_dict["--data.num_workers"] = 12
+configs_dict["--data.num_workers"] = 8
 configs_dict["--data.in_memory"] = 1
 configs_dict["--data.dataset"] = 'MNIST'
 configs_dict["--logging.wandb_dryrun"] = 0
