@@ -58,6 +58,8 @@ configs_dict["--data.in_memory"] = 1
 configs_dict["--training.epochs"] = [300, 50]
 configs_dict["--training.checkpoint_interval"] = 50
 
+configs_dict["--dist.port"] = 12253
+
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):
         commands[i] = command + append
