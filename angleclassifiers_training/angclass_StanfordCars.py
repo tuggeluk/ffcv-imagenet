@@ -14,7 +14,7 @@ configs_dict["--data.train_dataset"] = "/home/ubuntu/Stanford_ffcv/train.ffcv"
 configs_dict["--data.val_dataset"] = "/home/ubuntu/Stanford_ffcv/val.ffcv"
 checkpoints_basedir = "/home/ubuntu/ffcv-imagenet/logs/base_models_stanfordcars"
 logging_basedir = "/home/ubuntu/rotation_module/ffcv-imagenet/logs/train_angleclass_StanfordCars"
-run_name_prefix = ""
+run_name_prefix = "turned_off_first_two"
 
 
 configs_dict["--data.num_workers"] = 12
@@ -29,14 +29,17 @@ configs_dict["--logging.wandb_project"] = "train_angleclass_no_lossshape_Stanfor
 #configs_dict["--training.load_from"] = ["_mask_norotate"]
 configs_dict["--angleclassifier.freeze_base"] = 1
 configs_dict["--lr.lr"] = 0.5
+# configs_dict["--training.load_from"] = ["arch:efficientnet_b0__random_rotate:0__",
+# "arch:efficientnet_b2__random_rotate:0__",
+# "arch:efficientnet_b4__random_rotate:0__",
+# "arch:resnet18__random_rotate:0__",
+# "arch:resnet50__random_rotate:0__",
+# "arch:resnet152__random_rotate:0__",
+# "arch:resnext50_32x4d__random_rotate:0__",
+# "arch:resnext101_32x8d__random_rotate:0__"]
+
 configs_dict["--training.load_from"] = ["arch:efficientnet_b0__random_rotate:0__",
-"arch:efficientnet_b2__random_rotate:0__",
-"arch:efficientnet_b4__random_rotate:0__",
-"arch:resnet18__random_rotate:0__",
-"arch:resnet50__random_rotate:0__",
-"arch:resnet152__random_rotate:0__",
-"arch:resnext50_32x4d__random_rotate:0__",
-"arch:resnext101_32x8d__random_rotate:0__"]
+"arch:resnet18__random_rotate:0__"]
 
 configs_dict["--angleclassifier.attach_upright_classifier"] = 1
 configs_dict["--angleclassifier.attach_ang_classifier"] = 1
