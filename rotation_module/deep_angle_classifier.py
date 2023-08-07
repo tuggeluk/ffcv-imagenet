@@ -11,18 +11,18 @@ from torchvision.models.vision_transformer import VisionTransformer
 
 class DeepAngleClassifier(BaseAngleClassifier):
 
-    def __init__(self, in_model, out_channels, layers=(1, 1, 1, 1), depths=(64, 128, 256, 512), flatten='basic'):
+    def __init__(self, in_model, out_channels, layers=(1, 1, 1, 1), depths=(64, 128, 256, 512), flatten='basic',
+                 inplane_blocked=[False, False, False, False, False]):
         super().__init__()
 
         # use ResNet Defaults
         self._norm_layer = nn.BatchNorm2d
-
+        self.inplane_blocked = inplane_blocked
         self.dilation = 1
         self.groups = 1
         self.base_width = 64
         self.inplanes = 64
 
-        self.inplane_blocked = [True, True, False, False, False]
         print("inplanes: "+ str(self.inplane_blocked))
 
         if isinstance(in_model, VisionTransformer):
@@ -122,13 +122,16 @@ class DeepAngleClassifier(BaseAngleClassifier):
             x_out = self.layer1(self.dsmx_in(x[self.extract_list[0]].type(ch.float)))
         if not self.inplane_blocked[1]:
             x_out = self.ds1_merge(self.maybe_repeat_cat(x_out, self.ds1_in(x[self.extract_list[1]].type(ch.float))))
-        x_out = self.layer2(x_out)
+        if x_out is not None:
+            x_out = self.layer2(x_out)
         if not self.inplane_blocked[2]:
             x_out = self.ds2_merge(self.maybe_repeat_cat(x_out, self.ds2_in(x[self.extract_list[2]].type(ch.float))))
-        x_out = self.layer3(x_out)
+        if x_out is not None:
+            x_out = self.layer3(x_out)
         if not self.inplane_blocked[3]:
             x_out = self.ds3_merge(self.maybe_repeat_cat(x_out, self.ds3_in(x[self.extract_list[3]].type(ch.float))))
-        x_out = self.layer4(x_out)
+        if x_out is not None:
+            x_out = self.layer4(x_out)
         if not self.inplane_blocked[4]:
             x_out = self.ds4_merge(self.maybe_repeat_cat(x_out, self.ds4_in(x[self.extract_list[4]].type(ch.float))))
 

@@ -160,7 +160,9 @@ Section('angleclassifier', 'distributed training options').params(
     prio_class=Param(float, 'should we use regression for the angle', default=1),
     prio_angle=Param(float, 'should we use regression for the angle', default=1),
     flatten=Param(And(str, OneOf(['basic', 'extended'])), 'flatten with avg pool (1,1) or (5,5)', default='extended'),
-    shape_class_loss=Param(int, 'perform loss shaping on the angle classifier', default=0)
+    shape_class_loss=Param(int, 'perform loss shaping on the angle classifier', default=0),
+    inplane_blocked=Param(And(str, OneOf(['none', 'o_first', 'o_second', 'o_third', 'o_fourth', 'o_fifth', 'early', 'late'])),
+                          'block some of the paths to the angle classifier', default="none")
 )
 
 Section('angle_testmode', 'configure how testing performed').params(
@@ -484,18 +486,37 @@ class ImageNetTrainer:
             self.log(log_dict)
 
         return stats
+    def lookup_inplaneblocks(self, inplane_blocked):
+        if inplane_blocked == 'none':
+            inplane_blocked = [False, False, False, False, False]
+        elif inplane_blocked == 'o_fist':
+            inplane_blocked = [False, True, True, True, True]
+        elif inplane_blocked == 'o_second':
+            inplane_blocked = [True, False, True, True, True]
+        elif inplane_blocked == 'o_third':
+            inplane_blocked = [True, True, False, True, True]
+        elif inplane_blocked == 'o_fourth':
+            inplane_blocked = [True, True, True, False, True]
+        elif inplane_blocked == 'o_fifth':
+            inplane_blocked = [True, True, True, True, False]
+        elif inplane_blocked == 'early':
+            inplane_blocked = [True, True, False, False, False]
+        elif inplane_blocked == 'late':
+            inplane_blocked = [True, True, True, True, False]
+        return inplane_blocked
 
-    def create_classifier(self, type, num_out, flatten, base_model):
+    def create_classifier(self, type, num_out, flatten, base_model, inplane_blocked):
+        inplane_blocked = self.lookup_inplaneblocks(inplane_blocked=inplane_blocked)
         if type == 'fc':
             ang_class = FcAngleClassifier(base_model, num_out)
         elif type == 'fc2':
             ang_class = Fc2AngleClassifier(base_model, num_out)
         elif type == 'deep':
-            ang_class = DeepAngleClassifier(base_model, num_out, flatten=flatten)
+            ang_class = DeepAngleClassifier(base_model, num_out, flatten=flatten, inplane_blocked=inplane_blocked)
         elif type == 'deepx2':
-            ang_class = DeepAngleClassifier(base_model, num_out, layers=(2, 2, 2, 2), flatten=flatten)
+            ang_class = DeepAngleClassifier(base_model, num_out, layers=(2, 2, 2, 2), flatten=flatten, inplane_blocked=inplane_blocked)
         elif type == 'deepslant':
-            ang_class = DeepAngleClassifier(base_model, num_out, layers=(1, 2, 2, 3), flatten=flatten)
+            ang_class = DeepAngleClassifier(base_model, num_out, layers=(1, 2, 2, 3), flatten=flatten, inplane_blocked=inplane_blocked)
         elif type == 'vit':
             ang_class = VitAngleClassifier(base_model, num_out)
         elif type == 'vitcnn':
@@ -518,10 +539,11 @@ class ImageNetTrainer:
     @param('angleclassifier.classifier_upright')
     @param('angleclassifier.classifier_ang')
     @param('angleclassifier.angle_binsize')
+    @param('angleclassifier.inplane_blocked')
     @param('data.dataset')
     def create_model_and_scaler(self, arch, pretrained, distributed, use_blurpool, load_from, eval_only, freeze_base,
                                 loss_scope, flatten, attach_upright_classifier, attach_ang_classifier, classifier_upright,
-                                classifier_ang, angle_binsize, dataset):
+                                classifier_ang, angle_binsize, inplane_blocked, dataset):
         scaler = GradScaler()
 
         if dataset == 'ImageNet':
@@ -547,12 +569,12 @@ class ImageNetTrainer:
         #     model.fc = ch.nn.Identity()
 
         if attach_upright_classifier:
-            upright_class = self.create_classifier(classifier_upright, [2]*len(angle_binsize), flatten, model)
+            upright_class = self.create_classifier(classifier_upright, [2]*len(angle_binsize), flatten, model, inplane_blocked=inplane_blocked)
         else:
             upright_class = None
 
         if attach_ang_classifier:
-            ang_class = self.create_classifier(classifier_ang, 360, flatten, model)
+            ang_class = self.create_classifier(classifier_ang, 360, flatten, model, inplane_blocked=inplane_blocked)
         else:
             ang_class = None
 

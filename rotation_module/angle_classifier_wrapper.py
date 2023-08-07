@@ -24,7 +24,6 @@ class AngleClassifierWrapper(ch.nn.Module):
         self.up_class = upright_class
         self.ang_class = ang_class
         self.transformer_mode = False
-
         self.forward_modules = self.base_model._modules
 
         if isinstance(base_model, EfficientNet):

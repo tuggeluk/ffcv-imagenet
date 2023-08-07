@@ -52,6 +52,7 @@ configs_dict["--angleclassifier.flatten"] = 'basic'
 
 configs_dict["--angle_testmode.corr_pred"] = [1]
 configs_dict["--angleclassifier.shape_class_loss"] = [0]
+configs_dict["--angleclassifier.inplane_blocked"] = ['none', 'o_first', 'o_second', 'o_third', 'o_fourth', 'o_fifth', 'early', 'late']
 
 
 configs_dict["--data.in_memory"] = 1
