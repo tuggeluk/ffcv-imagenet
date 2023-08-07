@@ -23,6 +23,7 @@ class DeepAngleClassifier(BaseAngleClassifier):
         self.inplanes = 64
 
         self.inplane_blocked = [True, True, False, False, False]
+        print("inplanes: "+ str(self.inplane_blocked))
 
         if isinstance(in_model, VisionTransformer):
             if len(in_model.encoder.layers) == 24:
