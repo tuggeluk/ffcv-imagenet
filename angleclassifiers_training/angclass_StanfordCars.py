@@ -10,8 +10,8 @@ configs_dict = OrderedDict()
 
 
 configs_dict["--config-file"] = "configs/angleclass_configs/rn18_angleclass_base.yaml"
-configs_dict["--data.train_dataset"] = "/home/ubuntu/Stanford_ffcv/train.ffcv"
-configs_dict["--data.val_dataset"] = "/home/ubuntu/Stanford_ffcv/val.ffcv"
+configs_dict["--data.train_dataset"] = "/cluster/home/tugg/Stanford_ffcv/train.ffcv"
+configs_dict["--data.val_dataset"] = "/cluster/home/tugg/Stanford_ffcv/val.ffcv"
 checkpoints_basedir = "/cluster/home/tugg/ffcv-imagenet/logs/base_models_stanfordcars"
 logging_basedir = "/cluster/home/tugg/ffcv-imagenet/ffcv-imagenet/logs/train_angleclass_StanfordCars"
 run_name_prefix = "turned_off_first_two"
