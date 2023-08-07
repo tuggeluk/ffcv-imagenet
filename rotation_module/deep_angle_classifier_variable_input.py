@@ -9,7 +9,7 @@ from torchvision.models.efficientnet import EfficientNet
 from torchvision.models.vision_transformer import VisionTransformer
 
 
-class DeepAngleClassifier(BaseAngleClassifier):
+class DeepAngleClassifierVAR(BaseAngleClassifier):
 
     def __init__(self, in_model, out_channels, layers=(1, 1, 1, 1), depths=(64, 128, 256, 512), flatten='basic'):
         super().__init__()
@@ -22,7 +22,6 @@ class DeepAngleClassifier(BaseAngleClassifier):
         self.base_width = 64
         self.inplanes = 64
 
-        self.inplane_blocked = [False, True, True, True, True]
 
         if isinstance(in_model, VisionTransformer):
             if len(in_model.encoder.layers) == 24:
@@ -107,21 +106,16 @@ class DeepAngleClassifier(BaseAngleClassifier):
                 nn.init.constant_(m.bias, 0)
 
 
-
     def forward(self, x: Tensor) -> (Tensor,Tensor):
 
         x_out = self.layer1(self.dsmx_in(x[self.extract_list[0]].type(ch.float)))
-        if not self.inplane_blocked[1]:
-            x_out = self.ds1_merge(ch.cat((x_out, self.ds1_in(x[self.extract_list[1]].type(ch.float))), 1))
+        x_out = self.ds1_merge(ch.cat((x_out, self.ds1_in(x[self.extract_list[1]].type(ch.float))), 1))
         x_out = self.layer2(x_out)
-        if not self.inplane_blocked[2]:
-            x_out = self.ds2_merge(ch.cat((x_out, self.ds2_in(x[self.extract_list[2]].type(ch.float))), 1))
+        x_out = self.ds2_merge(ch.cat((x_out, self.ds2_in(x[self.extract_list[2]].type(ch.float))), 1))
         x_out = self.layer3(x_out)
-        if not self.inplane_blocked[3]:
-            x_out = self.ds3_merge(ch.cat((x_out, self.ds3_in(x[self.extract_list[3]].type(ch.float))), 1))
+        x_out = self.ds3_merge(ch.cat((x_out, self.ds3_in(x[self.extract_list[3]].type(ch.float))), 1))
         x_out = self.layer4(x_out)
-        if not self.inplane_blocked[4]:
-            x_out = self.ds4_merge(ch.cat((x_out, self.ds4_in(x[self.extract_list[4]].type(ch.float))), 1))
+        x_out = self.ds4_merge(ch.cat((x_out, self.ds4_in(x[self.extract_list[4]].type(ch.float))), 1))
 
         x_out = self.avgpool(x_out)
         x_out = ch.flatten(x_out, 1)
