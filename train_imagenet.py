@@ -489,7 +489,7 @@ class ImageNetTrainer:
     def lookup_inplaneblocks(self, inplane_blocked):
         if inplane_blocked == 'none':
             inplane_blocked = [False, False, False, False, False]
-        elif inplane_blocked == 'o_fist':
+        elif inplane_blocked == 'o_first':
             inplane_blocked = [False, True, True, True, True]
         elif inplane_blocked == 'o_second':
             inplane_blocked = [True, False, True, True, True]
