@@ -117,23 +117,33 @@ class DeepAngleClassifier(BaseAngleClassifier):
 
 
     def forward(self, x: Tensor) -> (Tensor,Tensor):
-        x_out = None
-        if not self.inplane_blocked[0]:
-            x_out = self.layer1(self.dsmx_in(x[self.extract_list[0]].type(ch.float)))
-        if not self.inplane_blocked[1]:
-            x_out = self.ds1_merge(self.maybe_repeat_cat(x_out, self.ds1_in(x[self.extract_list[1]].type(ch.float))))
-        if x_out is not None:
-            x_out = self.layer2(x_out)
-        if not self.inplane_blocked[2]:
-            x_out = self.ds2_merge(self.maybe_repeat_cat(x_out, self.ds2_in(x[self.extract_list[2]].type(ch.float))))
-        if x_out is not None:
-            x_out = self.layer3(x_out)
-        if not self.inplane_blocked[3]:
-            x_out = self.ds3_merge(self.maybe_repeat_cat(x_out, self.ds3_in(x[self.extract_list[3]].type(ch.float))))
-        if x_out is not None:
-            x_out = self.layer4(x_out)
-        if not self.inplane_blocked[4]:
-            x_out = self.ds4_merge(self.maybe_repeat_cat(x_out, self.ds4_in(x[self.extract_list[4]].type(ch.float))))
+        # x_out = None
+        # if not self.inplane_blocked[0]:
+        #     x_out = self.layer1(self.dsmx_in(x[self.extract_list[0]].type(ch.float)))
+        # if not self.inplane_blocked[1]:
+        #     x_out = self.ds1_merge(self.maybe_repeat_cat(x_out, self.ds1_in(x[self.extract_list[1]].type(ch.float))))
+        # if x_out is not None:
+        #     x_out = self.layer2(x_out)
+        # if not self.inplane_blocked[2]:
+        #     x_out = self.ds2_merge(self.maybe_repeat_cat(x_out, self.ds2_in(x[self.extract_list[2]].type(ch.float))))
+        # if x_out is not None:
+        #     x_out = self.layer3(x_out)
+        # if not self.inplane_blocked[3]:
+        #     x_out = self.ds3_merge(self.maybe_repeat_cat(x_out, self.ds3_in(x[self.extract_list[3]].type(ch.float))))
+        # if x_out is not None:
+        #     x_out = self.layer4(x_out)
+        # if not self.inplane_blocked[4]:
+        #     x_out = self.ds4_merge(self.maybe_repeat_cat(x_out, self.ds4_in(x[self.extract_list[4]].type(ch.float))))
+
+        x_out = self.layer1(self.dsmx_in(x[self.extract_list[0]].type(ch.float)))
+        x_out = self.ds1_merge(ch.cat((x_out, self.ds1_in(x[self.extract_list[1]].type(ch.float))), 1))
+        x_out = self.layer2(x_out)
+        x_out = self.ds2_merge(ch.cat((x_out, self.ds2_in(x[self.extract_list[2]].type(ch.float))), 1))
+        x_out = self.layer3(x_out)
+        x_out = self.ds3_merge(ch.cat((x_out, self.ds3_in(x[self.extract_list[3]].type(ch.float))), 1))
+        x_out = self.layer4(x_out)
+        x_out = self.ds4_merge(ch.cat((x_out, self.ds4_in(x[self.extract_list[4]].type(ch.float))), 1))
+
 
         x_out = self.avgpool(x_out)
         x_out = ch.flatten(x_out, 1)
