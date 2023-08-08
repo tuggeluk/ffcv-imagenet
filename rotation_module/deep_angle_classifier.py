@@ -30,8 +30,8 @@ class DeepAngleClassifier(BaseAngleClassifier):
             self.strides = [2, 4, 2, 1]
 
         else:
-            self.base_in = 512
-            self.extract_list = ['layer4', 'layer1', 'layer2', 'layer3', 'layer4']
+            self.base_in = 64
+            self.extract_list = ['maxpool', 'layer1', 'layer2', 'layer3', 'layer4']
             self.in_sizes = [self._get_recursive_last_size(in_model.get_submodule(x)) for x in self.extract_list if
                              'layer' in x]
             self.strides = [1, 2, 2, 2]
@@ -92,7 +92,7 @@ class DeepAngleClassifier(BaseAngleClassifier):
     def forward(self, x: Tensor) -> (Tensor, Tensor):
 
         x_out = self.layer1(self.dsmx_in(x[self.extract_list[0]].type(ch.float)))
-        #x_out = self.ds1_merge(ch.cat((x_out, self.ds1_in(x[self.extract_list[1]].type(ch.float))), 1))
+        x_out = self.ds1_merge(ch.cat((x_out, self.ds1_in(x[self.extract_list[1]].type(ch.float))), 1))
         x_out = self.layer2(x_out)
         #x_out = self.ds2_merge(ch.cat((x_out, self.ds2_in(x[self.extract_list[2]].type(ch.float))), 1))
         x_out = self.layer3(x_out)
