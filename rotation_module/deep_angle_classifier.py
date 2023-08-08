@@ -30,7 +30,7 @@ class DeepAngleClassifier(BaseAngleClassifier):
             self.strides = [2, 4, 2, 1]
 
         else:
-            self.base_in = 64
+            self.base_in = 128
             self.extract_list = ['layer2', 'layer1', 'layer2', 'layer3', 'layer4']
             self.in_sizes = [self._get_recursive_last_size(in_model.get_submodule(x)) for x in self.extract_list if
                              'layer' in x]
