@@ -65,6 +65,7 @@ configs_dict["--angle_testmode.corr_pred"] = [1]
 configs_dict["--angleclassifier.shape_class_loss"] = [0]
 configs_dict["--angleclassifier.inplane_blocked"] = ['none', 'o_first', 'early', 'late']
 
+
 configs_dict["--data.in_memory"] = 1
 configs_dict["--training.epochs"] = [5]
 configs_dict["--dist.port"] = 12254
