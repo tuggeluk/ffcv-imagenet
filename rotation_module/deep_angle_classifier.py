@@ -45,8 +45,8 @@ class DeepAngleClassifier(BaseAngleClassifier):
         self.layer3 = self._make_layer(BasicBlock, depths[2], layers[2], stride=self.strides[2], dilate=False)
         self.layer4 = self._make_layer(BasicBlock, depths[3], layers[3], stride=self.strides[3], dilate=False)
 
-        # self.ds1_in = self._create_downsample(self.in_sizes[0], depths[0])
-        # self.ds1_merge = self._create_downsample(depths[0]*2, depths[0])
+        self.ds1_in = self._create_downsample(self.in_sizes[0], depths[0])
+        self.ds1_merge = self._create_downsample(depths[0]*2, depths[0])
         #
         # self.ds2_in = self._create_downsample(self.in_sizes[1], depths[1])
         # self.ds2_merge = self._create_downsample(depths[1]*2, depths[1])
