@@ -38,6 +38,7 @@ configs_dict["--logging.wandb_project"] = "train_angleclass_no_lossshape"
 configs_dict["--angleclassifier.freeze_base"] = 1
 configs_dict["--lr.lr"] = 0.5
 configs_dict["--lr.lr_peak_epoch"] = 2
+
 # configs_dict["--training.load_from"] = ["random_rotate:0__arch:efficientnet_b0__",
 # "random_rotate:0__arch:efficientnet_b2__",
 # "random_rotate:0__arch:efficientnet_b4__",
@@ -62,11 +63,11 @@ configs_dict["--angleclassifier.flatten"] = 'basic'
 
 configs_dict["--angle_testmode.corr_pred"] = [1]
 configs_dict["--angleclassifier.shape_class_loss"] = [0]
-configs_dict["--angleclassifier.inplane_blocked"] = ['none', 'o_first', 'o_second', 'o_third', 'o_fourth', 'o_fifth', 'early', 'late']
+configs_dict["--angleclassifier.inplane_blocked"] = ['none', 'o_first', 'early', 'late']
 
 configs_dict["--data.in_memory"] = 1
 configs_dict["--training.epochs"] = [5]
-
+configs_dict["--dist.port"] = 12254
 def extend_commands(commands:list, append:str) -> list:
     for i, command in enumerate(commands):
         commands[i] = command + append
