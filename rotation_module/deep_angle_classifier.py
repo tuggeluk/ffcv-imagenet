@@ -40,21 +40,22 @@ class DeepAngleClassifier(BaseAngleClassifier):
 
         self.dsmx_in = self._create_downsample(self.base_in, depths[0])
 
-        self.ds1_in = self._create_downsample(self.in_sizes[0], depths[0])
         self.layer1 = self._make_layer(BasicBlock, depths[0], layers[0], stride=self.strides[0])
-        self.ds1_merge = self._create_downsample(depths[0]*2, depths[0])
-
-        self.ds2_in = self._create_downsample(self.in_sizes[1], depths[1])
         self.layer2 = self._make_layer(BasicBlock, depths[1], layers[1], stride=self.strides[1], dilate=False)
-        self.ds2_merge = self._create_downsample(depths[1]*2, depths[1])
-
-        self.ds3_in = self._create_downsample(self.in_sizes[2], depths[2])
         self.layer3 = self._make_layer(BasicBlock, depths[2], layers[2], stride=self.strides[2], dilate=False)
-        self.ds3_merge = self._create_downsample(depths[2]*2, depths[2])
-
-        self.ds4_in = self._create_downsample(self.in_sizes[3], depths[3])
         self.layer4 = self._make_layer(BasicBlock, depths[3], layers[3], stride=self.strides[3], dilate=False)
-        self.ds4_merge = self._create_downsample(depths[3]*2, depths[3])
+
+        # self.ds1_in = self._create_downsample(self.in_sizes[0], depths[0])
+        # self.ds1_merge = self._create_downsample(depths[0]*2, depths[0])
+        #
+        # self.ds2_in = self._create_downsample(self.in_sizes[1], depths[1])
+        # self.ds2_merge = self._create_downsample(depths[1]*2, depths[1])
+        #
+        # self.ds3_in = self._create_downsample(self.in_sizes[2], depths[2])
+        # self.ds3_merge = self._create_downsample(depths[2]*2, depths[2])
+        #
+        # self.ds4_in = self._create_downsample(self.in_sizes[3], depths[3])
+        # self.ds4_merge = self._create_downsample(depths[3]*2, depths[3])
 
         if flatten == 'basic':
             self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
